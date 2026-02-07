@@ -1,0 +1,23 @@
+{
+  "variable": {
+    "TAG": {
+      "default": "latest"
+    }
+  },
+  "group": {
+    "default": {
+      "targets": ["flak"]
+    }
+  },
+  "target": {
+    "flak": {
+      "context": ".",
+      "dockerfile": "build/Dockerfile",
+      "tags": [
+        "ghcr.io/amirhnajafiz/flak:${TAG}",
+        "ghcr.io/amirhnajafiz/flak:latest"
+      ],
+      "output": ["type=registry"]
+    }
+  }
+}
