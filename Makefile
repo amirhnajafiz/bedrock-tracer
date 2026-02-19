@@ -1,8 +1,9 @@
-.PHONY: src-gen
+.PHONY: all bt_scripts
 
-src-gen:
-	python3 scripts/gen_bpftrace.py
+all: bt_scripts
 
-cert-gen:
-	chmod u+x scripts/gen_certs.sh
-	./scripts/gen_certs.sh
+bt_scripts:
+	git subtree add --prefix=bpftrace \
+		https://github.com/amirhnajafiz/bedrock-bpftrace.git \
+		v0.0.0 \
+		--squash
