@@ -1,0 +1,89 @@
+#!/usr/bin/env bpftrace
+// dir: src/bpftrace/command
+// log format: [timestamp] {pid=[pid] tid=[tid] proc=[command]}{[EN|EX] [operand]} {[key=value]}
+
+BEGIN
+{
+  @tracked_comm = str($1);
+  printf("%s START tracing events (filter command: %s)\n", strftime("%Y-%m-%d %H:%M:%S", nsecs), str($1));
+}
+
+/* ----- Child Process Tracing ----- */
+/* when we see a fork, if parent is tracked then also track child */
+tracepoint:sched:sched_process_fork
+/ comm == @tracked_comm || @tracked[args->parent_pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN fork}{pid=%d comm=%s}\n", nsecs, args->parent_pid, tid, args->parent_comm, args->child_pid, args->child_comm);
+
+  @fname[pid, 0] = "STDIN";
+  @fname[pid, 1] = "STDOUT";
+  @fname[pid, 2] = "STDERR";
+  @tracked[args->child_pid] = 1;
+}
+
+/* when exec happens, if old_pid tracked ensure that the new pid is also tracked */
+tracepoint:sched:sched_process_exec
+/ comm == @tracked_comm || @tracked[args->old_pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN exec}{pid=%d fname=%s}\n", nsecs, args->old_pid, tid, comm, args->pid, str(args->filename));
+
+  @fname[pid, 0] = "STDIN";
+  @fname[pid, 1] = "STDOUT";
+  @fname[pid, 2] = "STDERR";
+  @tracked[args->pid] = 1;
+}
+
+/* cleanup process fname table and untrack process */
+tracepoint:sched:sched_process_exit
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX process}{}\n", nsecs, pid, tid, comm);
+
+  delete(@fname[pid, 0]);
+  delete(@fname[pid, 1]);
+  delete(@fname[pid, 2]);
+  delete(@tracked[pid]);
+}
+
+
+
+/* mmap enter + exit */
+tracepoint:syscalls:sys_enter_mmap
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN mmap}{fd=%d addr=%lu len=%lu}\n", nsecs, pid, tid, comm, args->fd, args->addr, args->len);
+}
+
+tracepoint:syscalls:sys_exit_mmap
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX mmap}{ret=%lu}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* munmap enter + exit */
+tracepoint:syscalls:sys_enter_munmap
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN munmap}{addr=%lu len=%lu}\n", nsecs, pid, tid, comm, args->addr, args->len);
+}
+
+tracepoint:syscalls:sys_exit_munmap
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX munmap}{ret=%lu}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* page fault user */
+tracepoint:exceptions:page_fault_user
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN page_fault_user}{addr=%lu}\n", nsecs, pid, tid, comm, args->address);
+  @start[tid] = nsecs;
+}
+
+kretprobe:handle_mm_fault
+/ @start[tid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX page_fault_user}{latency=%llu}\n", nsecs, pid, tid, comm, nsecs - @start[tid]);
+  delete(@start[tid]);
+}

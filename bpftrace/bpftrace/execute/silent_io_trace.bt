@@ -1,0 +1,155 @@
+#!/usr/bin/env bpftrace
+// dir: src/bpftrace/execute
+// log format: [timestamp] {pid=[pid] tid=[tid] proc=[command]}{[EN|EX] [operand]} {[key=value]}
+
+BEGIN
+{
+  @fname[cpid, 0] = "STDIN";
+  @fname[cpid, 1] = "STDOUT";
+  @fname[cpid, 2] = "STDERR";
+  @tracked[cpid] = 1;
+  printf("%s START tracing events for CPID %llu\n", strftime("%Y-%m-%d %H:%M:%S", nsecs), cpid);
+}
+
+/* ----- Child Process Tracing ----- */
+/* when we see a fork, if parent is tracked then also track child */
+tracepoint:sched:sched_process_fork
+/ @tracked[args->parent_pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN fork}{pid=%d comm=%s}\n", nsecs, args->parent_pid, tid, args->parent_comm, args->child_pid, args->child_comm);
+
+  @fname[pid, 0] = "STDIN";
+  @fname[pid, 1] = "STDOUT";
+  @fname[pid, 2] = "STDERR";
+  @tracked[args->child_pid] = 1;
+}
+
+/* when exec happens, if old_pid tracked ensure that the new pid is also tracked */
+tracepoint:sched:sched_process_exec
+/ @tracked[args->old_pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN exec}{pid=%d fname=%s}\n", nsecs, args->old_pid, tid, comm, args->pid, str(args->filename));
+
+  @fname[pid, 0] = "STDIN";
+  @fname[pid, 1] = "STDOUT";
+  @fname[pid, 2] = "STDERR";
+  @tracked[args->pid] = 1;
+}
+
+/* cleanup process fname table and untrack process */
+tracepoint:sched:sched_process_exit
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX process}{}\n", nsecs, pid, tid, comm);
+
+  delete(@fname[pid, 0]);
+  delete(@fname[pid, 1]);
+  delete(@fname[pid, 2]);
+  delete(@tracked[pid]);
+}
+
+
+
+/* read enter + exit */
+tracepoint:syscalls:sys_enter_read
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN read}{fd=%d count=%d}\n", nsecs, pid, tid, comm, args->fd, args->count);
+}
+
+tracepoint:syscalls:sys_exit_read
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX read}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* write enter + exit */
+tracepoint:syscalls:sys_enter_write
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN write}{fd=%d count=%d}\n", nsecs, pid, tid, comm, args->fd, args->count);
+}
+
+tracepoint:syscalls:sys_exit_write
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX write}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* pread64 enter + exit */
+tracepoint:syscalls:sys_enter_pread64
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN pread64}{fd=%d count=%d}\n", nsecs, pid, tid, comm, args->fd, args->count);
+}
+
+tracepoint:syscalls:sys_exit_pread64
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX pread64}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* pwrite64 enter + exit */
+tracepoint:syscalls:sys_enter_pwrite64
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN pwrite64}{fd=%d count=%d}\n", nsecs, pid, tid, comm, args->fd, args->count);
+}
+
+tracepoint:syscalls:sys_exit_pwrite64
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX pwrite64}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* readv enter + exit */
+tracepoint:syscalls:sys_enter_readv
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN readv}{fd=%d count=%lu}\n", nsecs, pid, tid, comm, args->fd, args->vlen);
+}
+
+tracepoint:syscalls:sys_exit_readv
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX readv}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* writev enter + exit */
+tracepoint:syscalls:sys_enter_writev
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN writev}{fd=%d count=%lu}\n", nsecs, pid, tid, comm, args->fd, args->vlen);
+}
+
+tracepoint:syscalls:sys_exit_writev
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX writev}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* preadv enter + exit */
+tracepoint:syscalls:sys_enter_preadv
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN preadv}{fd=%d count=%lu}\n", nsecs, pid, tid, comm, args->fd, args->vlen);
+}
+
+tracepoint:syscalls:sys_exit_preadv
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX preadv}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* pwritev enter + exit */
+tracepoint:syscalls:sys_enter_pwritev
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN pwritev}{fd=%d count=%lu}\n", nsecs, pid, tid, comm, args->fd, args->vlen);
+}
+
+tracepoint:syscalls:sys_exit_pwritev
+/ @tracked[pid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX pwritev}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
