@@ -1,0 +1,116 @@
+#!/usr/bin/env bpftrace
+// dir: src/bpftrace/cgroup_and_command
+// log format: [timestamp] {pid=[pid] tid=[tid] proc=[command]}{[EN|EX] [operand]} {[key=value]}
+
+BEGIN
+{
+  @tracked_cgid = (uint64)$1;
+  @tracked_comm = str($2);
+  printf("%s START tracing events for CGROUP ID %llu (filter command: %s)\n", strftime("%Y-%m-%d %H:%M:%S", nsecs), $1, str($2));
+}
+
+
+
+/* read enter + exit */
+tracepoint:syscalls:sys_enter_read
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN read}{fd=%d count=%d}\n", nsecs, pid, tid, comm, args->fd, args->count);
+}
+
+tracepoint:syscalls:sys_exit_read
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX read}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* write enter + exit */
+tracepoint:syscalls:sys_enter_write
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN write}{fd=%d count=%d}\n", nsecs, pid, tid, comm, args->fd, args->count);
+}
+
+tracepoint:syscalls:sys_exit_write
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX write}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* pread64 enter + exit */
+tracepoint:syscalls:sys_enter_pread64
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN pread64}{fd=%d count=%d}\n", nsecs, pid, tid, comm, args->fd, args->count);
+}
+
+tracepoint:syscalls:sys_exit_pread64
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX pread64}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* pwrite64 enter + exit */
+tracepoint:syscalls:sys_enter_pwrite64
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN pwrite64}{fd=%d count=%d}\n", nsecs, pid, tid, comm, args->fd, args->count);
+}
+
+tracepoint:syscalls:sys_exit_pwrite64
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX pwrite64}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* readv enter + exit */
+tracepoint:syscalls:sys_enter_readv
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN readv}{fd=%d count=%lu}\n", nsecs, pid, tid, comm, args->fd, args->vlen);
+}
+
+tracepoint:syscalls:sys_exit_readv
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX readv}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* writev enter + exit */
+tracepoint:syscalls:sys_enter_writev
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN writev}{fd=%d count=%lu}\n", nsecs, pid, tid, comm, args->fd, args->vlen);
+}
+
+tracepoint:syscalls:sys_exit_writev
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX writev}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* preadv enter + exit */
+tracepoint:syscalls:sys_enter_preadv
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN preadv}{fd=%d count=%lu}\n", nsecs, pid, tid, comm, args->fd, args->vlen);
+}
+
+tracepoint:syscalls:sys_exit_preadv
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX preadv}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* pwritev enter + exit */
+tracepoint:syscalls:sys_enter_pwritev
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN pwritev}{fd=%d count=%lu}\n", nsecs, pid, tid, comm, args->fd, args->vlen);
+}
+
+tracepoint:syscalls:sys_exit_pwritev
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX pwritev}{ret=%d}\n", nsecs, pid, tid, comm, args->ret);
+}

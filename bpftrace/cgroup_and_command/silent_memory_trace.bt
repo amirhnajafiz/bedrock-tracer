@@ -1,0 +1,53 @@
+#!/usr/bin/env bpftrace
+// dir: src/bpftrace/cgroup_and_command
+// log format: [timestamp] {pid=[pid] tid=[tid] proc=[command]}{[EN|EX] [operand]} {[key=value]}
+
+BEGIN
+{
+  @tracked_cgid = (uint64)$1;
+  @tracked_comm = str($2);
+  printf("%s START tracing events for CGROUP ID %llu (filter command: %s)\n", strftime("%Y-%m-%d %H:%M:%S", nsecs), $1, str($2));
+}
+
+
+
+/* mmap enter + exit */
+tracepoint:syscalls:sys_enter_mmap
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN mmap}{fd=%d addr=%lu len=%lu}\n", nsecs, pid, tid, comm, args->fd, args->addr, args->len);
+}
+
+tracepoint:syscalls:sys_exit_mmap
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX mmap}{ret=%lu}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* munmap enter + exit */
+tracepoint:syscalls:sys_enter_munmap
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN munmap}{addr=%lu len=%lu}\n", nsecs, pid, tid, comm, args->addr, args->len);
+}
+
+tracepoint:syscalls:sys_exit_munmap
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX munmap}{ret=%lu}\n", nsecs, pid, tid, comm, args->ret);
+}
+
+/* page fault user */
+tracepoint:exceptions:page_fault_user
+/ cgroup == @tracked_cgid && comm == @tracked_comm /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EN page_fault_user}{addr=%lu}\n", nsecs, pid, tid, comm, args->address);
+  @start[tid] = nsecs;
+}
+
+kretprobe:handle_mm_fault
+/ @start[tid] /
+{
+  printf("%llu {pid=%d tid=%d proc=%s}{EX page_fault_user}{latency=%llu}\n", nsecs, pid, tid, comm, nsecs - @start[tid]);
+  delete(@start[tid]);
+}
