@@ -1,6 +1,6 @@
-# FLAK (file access patterns)
+# Bedrock Tracer
 
-File Logging & Access Kernel-tracer (aka FLAK) is an eBPF-based tracing tool that monitors file access patterns over regular I/O operations and memory map operations. This is a cloud-native tracer that enables tracing in regular or container-based platforms.
+Bedrock is an eBPF-based tracing tool that monitors file access patterns over regular I/O operations and memory map operations. This is a cloud-native tracer that enables tracing in regular or container-based platforms.
 
 The tool enables tracing by:
 
@@ -10,7 +10,7 @@ The tool enables tracing by:
 * A specific cgroup id (used for containers).
 * A specific command with a specific cgroup id (used for containers).
 
-FLAK relies on the following tracepoints. Among them, only the cgroup tracers do not require child-process tracing tracepoints.
+Bedrock relies on the following tracepoints. Among them, only the cgroup tracers do not require child-process tracing tracepoints.
 
 ## I/O Operation Syscalls
 
