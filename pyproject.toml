@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bedrock-tracer"
-version = "0.1.0"
+version = "0.0.0"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -13,5 +13,5 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [project.scripts]
-app = "app:main"
-boot = "boot:main"
+bdtrace = "app:main"
+cbdtrace = "container:main"
