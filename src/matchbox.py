@@ -1,8 +1,8 @@
 import logging
 
-from files import create_dir
-from timestamp import export_reference_timestamps
 from tracer import Tracer
+from utils.files import create_dir
+from utils.timestamp import export_reference_timestamps
 
 
 def ignite_tracing(output_dir: str, tracers: list[Tracer]):
@@ -23,7 +23,7 @@ def ignite_tracing(output_dir: str, tracers: list[Tracer]):
     for tracer in tracers:
         logging.info(f"starting {tracer.name()} ...")
         tracer.start()
-    
+
     logging.info("all tracers started")
 
     # wait for all tracers
@@ -46,7 +46,7 @@ def extinguish_tracing(tracers: list[Tracer]):
         for tracer in tracers:
             logging.info(f"stopping {tracer.name()} ...")
             tracer.stop()
-        
+
         logging.info("all tracers stopped")
 
     return handle_shutdown

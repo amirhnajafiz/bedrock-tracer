@@ -1,6 +1,6 @@
-from files import get_tracing_scripts
 from tracer import MonoTracer, RotateTracer, Tracer
 from utils import ensure_script
+from utils.files import get_tracing_scripts
 
 
 def handle_execute(
