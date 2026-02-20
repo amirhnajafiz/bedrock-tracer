@@ -5,7 +5,8 @@ import signal
 import sys
 
 import handlers as hd
-from containers import find_pod_cgroup
+from containers import container_cgroup_id
+from containers.kubernetes import pod_container_id
 from matchbox import extinguish_tracing, ignite_tracing
 from utils import must_support_bpftrace
 
@@ -19,8 +20,13 @@ def process(args: argparse.Namespace):
     container = args.container
 
     # find the cgroup
-    cgroup = find_pod_cgroup(namespace=ns, pod=pod, container=container)
-    if len(cgroup) == 0:
+    cid, err = pod_container_id(namespace=ns, pod=pod, container=container)
+    if len(err) > 0:
+        logging.error(err)
+        sys.exit(1)
+
+    cgroup, err = container_cgroup_id(cid)
+    if len(err) > 0 or len(cgroup) == 0:
         logging.error("empty cgroup returned!")
         sys.exit(1)
 
