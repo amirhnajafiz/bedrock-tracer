@@ -1,6 +1,6 @@
-from src.files import get_tracing_scripts
-from src.tracer import MonoTracer, RotateTracer, Tracer
-from src.utils import ensure_script
+from files import get_tracing_scripts
+from tracer import MonoTracer, RotateTracer, Tracer
+from utils import ensure_script
 
 
 def handle_execute(

@@ -1,8 +1,8 @@
 import logging
 
-from src.files import create_dir
-from src.timestamp import export_reference_timestamps
-from src.tracer import Tracer
+from files import create_dir
+from timestamp import export_reference_timestamps
+from tracer import Tracer
 
 
 def ignite_tracing(output_dir: str, tracers: list[Tracer]):

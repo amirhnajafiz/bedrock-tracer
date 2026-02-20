@@ -73,6 +73,8 @@ Desktop.ini
 __pycache__/
 myvenv/
 venv/
+*.egg-info/
+.venv/
 
 # Exec file
 main
