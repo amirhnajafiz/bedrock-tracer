@@ -20,8 +20,8 @@ services:
     build:
       context: .
       dockerfile: build/core/Dockerfile
-    entrypoint: ["python3", "/usr/local/app/entrypoint/app.py"]
-    command: ["-h"]
+    entrypoint: ["bdtrace"]
+    command: ["--help"]
 
   # user end-to-end test runs a tracing operation to validate the
   # program functionality. If it works successfully, you should be able
@@ -41,8 +41,8 @@ services:
     volumes:
       - /sys:/sys:rw
       - ./tests/logs:/logs:rw
-    entrypoint: ["python3", "/usr/local/app/entrypoint/app.py"]
-    command: ["-e", "ls", "-o", "/logs/trace_ls"]
+    entrypoint: ["bdtrace"]
+    command: ["--execute", "ls", "-o", "/logs/trace_ls"]
   
   # the k8s test must be run on a kubernetes node that has kubelet.
   # you must add the pod, namespace, and container that you want for tracing.
@@ -63,15 +63,15 @@ services:
     volumes:
       - /sys:/sys:rw
       - ./tests/logs:/logs:rw
-    entrypoint: ["python3", "/usr/local/app/entrypoint/boot.py"]
+    entrypoint: ["bdtrace"]
     command: [
       "-o",
       "/logs/prom-logs",
-      "-p",
+      "--k8s_pod",
       "prometheus-k8s-0",
-      "-ns",
+      "--k8s_namespace",
       "monitoring",
-      "-c",
+      "--k8s_container",
       "prometheus"
     ]
 

@@ -6,16 +6,16 @@
   },
   "group": {
     "default": {
-      "targets": ["flak"]
+      "targets": ["bedrock"]
     }
   },
   "target": {
-    "flak": {
+    "bedrock": {
       "context": ".",
       "dockerfile": "build/Dockerfile",
       "tags": [
-        "ghcr.io/amirhnajafiz/flak:${TAG}",
-        "ghcr.io/amirhnajafiz/flak:latest"
+        "ghcr.io/amirhnajafiz/bedrock-tracer:${TAG}",
+        "ghcr.io/amirhnajafiz/bedrock-tracer:latest"
       ],
       "output": ["type=registry"]
     }

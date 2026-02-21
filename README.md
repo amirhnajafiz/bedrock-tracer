@@ -2,10 +2,8 @@
 
 ## TODO
 
-1. A unified entrypoint that accepts process information, cgroups, containers, and kubernetes pods information.
-2. Based on user input, call normal tracers, or find cgroup to trace container.
-3. Enhance logging and status.
-4. Export a config for reader.
+1. Enhance logging and status.
+2. Export a config for reader.
 
 Bedrock is an eBPF-based tracing tool that monitors file access patterns over regular I/O operations and memory map operations. This is a cloud-native tracer that enables tracing in regular or container-based platforms.
 
