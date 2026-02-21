@@ -10,41 +10,58 @@ The tool enables tracing by:
 * A specific cgroup id (used for containers).
 * A specific command with a specific cgroup id (used for containers).
 
-Bedrock relies on the following tracepoints. Among them, only the cgroup tracers do not require child-process tracing tracepoints.
+## Install
 
-## I/O Operation Syscalls
+After cloning into the repository, run:
 
-* read: Reads data from a file descriptor into a buffer.
-* write: Writes data from a buffer to a file descriptor.
-* readv: Reads data from a file descriptor into multiple buffers (vectorized I/O).
-* writev: Writes data to a file descriptor from multiple buffers (vectorized I/O).
-* pread64: Reads data from a specific offset in a file descriptor without changing the file position.​
-* pwrite64: Writes data to a specific offset in a file descriptor without changing the file position.
-* preadv: Reads data from a file descriptor at a specific offset into multiple buffers.
-* pwritev: Writes data to a file descriptor at a specific offset from multiple buffers.
+```sh
+make
+source .venv/bin/activate
+```
 
-## Memory Operation Syscalls
+Verify the installation:
 
-* mmap: Maps files or devices into memory, providing a pointer to the mapped area.
-* munmap: Frees memory space reserved by mmap.
-* page_fault_user: Throws an exception to get a page when it's not found.
-* handle_mm_fault: Kernel probe that handles memory page faults.
+```sh
+$ bdtrace --help
+usage: bdtrace [-h] [-o OUT] [-m MAX_STR_LEN] [-d] [-r] [-q] [-n] [-s ROTATE_SIZE]
+               (--execute EXECUTE | --pid PID | --cgroup CGROUP | --docker_container DOCKER_CONTAINER | --k8s_pod K8S_POD | --procname PROCNAME)
+               [--k8s_container K8S_CONTAINER] [--k8s_namespace K8S_NAMESPACE]
 
-## Metadata Extraction Syscalls
+Bedrock tracer is ebpf-based file access pattern tracing tool.
 
-* open: Opens or creates a file and returns a file descriptor for it.
-* openat: Opens or creates a file relative to a directory file descriptor.
-* dup: Duplicates an existing file descriptor to the lowest-numbered unused descriptor.
-* dup2: Duplicates a file descriptor to a specified descriptor, closing the target if necessary.​
-* dup3: Duplicates a file descriptor to a specified descriptor, with additional flags (like O_CLOEXEC).
-* statfs: Returns file system statistics for a file or mount point.
-* statx: Retrieves extended status information about a file.
-* newlstat: Retrieves information about a file but does not follow symbolic links (variant of lstat).
-* newstat: Retrieves status information about a file (variant of stat).
-* creat: Creates a new file or rewrites an existing one (equivalent to open with O_CREAT|O_WRONLY|O_TRUNC).
-* close: Closes an open file descriptor, freeing associated resources.
+options:
+  -h, --help            show this help message and exit
+  -o OUT, --out OUT     output directory (default ./logs)
+  -m MAX_STR_LEN, --max_str_len MAX_STR_LEN
+                        ebpf maximum string lenght (default 150)
+  -d, --debug           enable debug logs
+  -r, --rotate          enable log rotation
+  -q, --quiet_mode      enable queit tracing mode
+  -n, --no_memory_trace
+                        disable memory tracer
+  -s ROTATE_SIZE, --rotate_size ROTATE_SIZE
+                        log rotation size (default 100MB)
+  --execute EXECUTE     execute and trace
+  --pid PID             trace an existing pid
+  --cgroup CGROUP       trace with matching cgroup
+  --docker_container DOCKER_CONTAINER
+                        trace docker container
+  --k8s_pod K8S_POD     trace kubernetes pod
+  --procname PROCNAME   trace by matching process command name
+  --k8s_container K8S_CONTAINER
+                        set kubernetes container to trace
+  --k8s_namespace K8S_NAMESPACE
+                        set the kubernetes pod's namespace
+```
 
-## Child Process Tracing Syscalls
+### Root Access
 
-* fork: Creates a new process by duplicating the calling process.
-* exec: Replaces the current process image with a new process image (usually a program file).
+Bedrock tracer tracing modes need root access. Try the following approach to use it with sudo:
+
+```sh
+sudo $(which bdtrace) --execute ls
+```
+
+## Docker Image
+
+See the [`docker-compose.yaml`](docker-compose.yaml) as an example of building the docker image and using it.
