@@ -8,7 +8,7 @@ def must_support_bpftrace():
     """Check if bpftrace is supported."""
     if shutil.which("bpftrace") is None:
         logging.error("bpftrace not found in PATH. Please install bpftrace.")
-        sys.exit(3)
+        sys.exit(1)
 
 
 def ensure_script(path: str):
@@ -18,4 +18,4 @@ def ensure_script(path: str):
     """
     if not os.path.isfile(path):
         logging.error(f"required script '{path}' not found.")
-        sys.exit(4)
+        sys.exit(1)

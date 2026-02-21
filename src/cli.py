@@ -15,6 +15,8 @@ from utils import must_support_bpftrace
 def start(args: argparse.Namespace):
     tracers = []
 
+    logging.debug("start processing input arguments")
+
     # build the tracers based on input arguments
     if args.execute:
         tracers = hd.handle_execute(
@@ -23,6 +25,8 @@ def start(args: argparse.Namespace):
             rotate=args.rotate, 
             rotate_size=args.rotate_size
         )
+
+        logging.debug("execute tracers built")
     elif args.pid:
         tracers = hd.handle_pid(
             output_dir=args.out, 
@@ -30,6 +34,8 @@ def start(args: argparse.Namespace):
             rotate=args.rotate, 
             rotate_size=args.rotate_size
         )
+
+        logging.debug("pid tracers built")
     elif args.cgroup:
         if args.procname:
             tracers = hd.handle_cgroup_and_command(
@@ -46,6 +52,8 @@ def start(args: argparse.Namespace):
                 rotate=args.rotate, 
                 rotate_size=args.rotate_size
             )
+        
+        logging.debug("cgroup tracers built")
     elif args.docker_container:
         # get container pid
         container_pid, err = docker_container_pid(args.docker_container)
@@ -53,11 +61,15 @@ def start(args: argparse.Namespace):
             logging.error(err)
             sys.exit(1)
 
+        logging.debug(f"found container pid: {container_pid}")
+
         # get cgroup from pid
         cgroup, err = container_cgroup_id_from_pid(container_pid)
         if len(err) > 0:
             logging.error(err)
             sys.exit(1)
+
+        logging.debug(f"found container cgroup: {cgroup}")
 
         if args.procname:
             tracers = hd.handle_cgroup_and_command(
@@ -74,8 +86,10 @@ def start(args: argparse.Namespace):
                 rotate=args.rotate, 
                 rotate_size=args.rotate_size
             )
+        
+        logging.debug("cgroup tracers built")
     elif args.k8s_pod:
-        container_pid, err = pod_container_id(
+        container_id, err = pod_container_id(
             namespace=args.k8s_namespace, 
             pod=args.k8s_pod, 
             container_name=args.k8s_container
@@ -84,10 +98,14 @@ def start(args: argparse.Namespace):
             logging.error(err)
             sys.exit(1)
 
-        cgroup, err = container_cgroup_id(container_pid)
+        logging.debug(f"found container id: {container_id}")
+
+        cgroup, err = container_cgroup_id(container_id)
         if len(err) > 0:
             logging.error(err)
             sys.exit(1)
+
+        logging.debug(f"found container cgroup: {cgroup}")
 
         if args.procname:
             tracers = hd.handle_cgroup_and_command(
@@ -104,6 +122,8 @@ def start(args: argparse.Namespace):
                 rotate=args.rotate, 
                 rotate_size=args.rotate_size
             )
+        
+        logging.debug("cgroup tracers built")
     elif args.procname:
         tracers = hd.handle_command(
             output_dir=args.out, 
@@ -111,6 +131,8 @@ def start(args: argparse.Namespace):
             rotate=args.rotate, 
             rotate_size=args.rotate_size
         )
+
+        logging.debug("procname tracers built")
     else:
         logging.error("must run with --[execute|pid|cgroup|container|pod|procname]")
         sys.exit(0)
@@ -133,39 +155,41 @@ def init_vars(args: argparse.Namespace):
 
 def main():
     # create an argument parser
-    parser = argparse.ArgumentParser(description="Bedrock tracer.")
+    parser = argparse.ArgumentParser(
+        description="Bedrock tracer is ebpf-based file access pattern tracing tool."
+    )
 
     # flags
     parser.add_argument(
         "-o",
         "--out",
         default="logs",
-        help="directory path to export the tracing logs (default: logs)",
+        help="directory path to export the tracing logs [default ./logs]",
     )
     parser.add_argument(
         "-m",
         "--max_str_len",
         default="150",
-        help="BPF_MAX_STRLEN in bytes (default: 150)",
+        help="bpftrace maximum string length in bytes [default 150]",
     )
     parser.add_argument(
         "-d",
         "--debug",
         action="store_true",
-        help="enable debug mode (print debug messages)",
+        help="displaying debug messages",
     )
     parser.add_argument(
         "-r",
         "--rotate",
         action="store_true",
-        help="enable log rotation (useful to break large tracing log output)",
+        help="enable log rotation to chunk tracing output files",
     )
     parser.add_argument(
         "-s",
         "--rotate_size",
         type=int,
         default=100 * 1024 * 1024,
-        help="setting the rotate size (default is 100MB)",
+        help="log rotation rotate size [default 100MB]",
     )
 
     # regular tracing options
@@ -187,9 +211,9 @@ def main():
     parser.add_argument("--docker_container", help="docker container name to trace")
 
     # kubernetes tracing options
-    parser.add_argument("--k8s_pod", help="kubernetes pod's name")
+    parser.add_argument("--k8s_pod", help="kubernetes pod's name to trace")
     parser.add_argument(
-        "--k8s_container", help="kubernetes pod's container name to trace"
+        "--k8s_container", help="kubernetes pod's container name"
     )
     parser.add_argument(
         "--k8s_namespace", help="kubernetes pod's namespace"
