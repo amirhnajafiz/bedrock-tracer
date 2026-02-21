@@ -1,6 +1,7 @@
+import json
 import os
 import shutil
-from typing import Dict
+from typing import Any, Dict
 
 
 def create_dir(directory: str):
@@ -32,3 +33,12 @@ def get_tracing_scripts(
         )
 
     return out
+
+
+def write_reader_configs(dir_path: str, configs: Dict[str, Any]) -> None:
+    """Export reader config file into a json file.
+
+    :param dir_path: base directory
+    """
+    with open(os.path.join(dir_path, "reader.json"), "w") as file:
+        json.dump(configs, file, indent=4)

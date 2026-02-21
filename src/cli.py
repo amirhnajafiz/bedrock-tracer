@@ -10,6 +10,7 @@ from builder import build_parser
 from matchbox import extinguish_tracing, ignite_tracing
 from tracer import Tracer
 from utils import must_support_bpftrace
+from utils.files import create_dir, write_reader_configs
 
 # mode dispatch map
 MODE_DISPATCH = {
@@ -59,6 +60,10 @@ def init_vars(args: argparse.Namespace):
         format="%(asctime)s - %(name)s - %(levelname)s: %(message)s",
     )
 
+    # create the output directory
+    create_dir(args.out)
+    logging.debug("output directory initialized")
+
 
 def main():
     # build a parser and get input arguments
@@ -71,7 +76,9 @@ def main():
     # initialize variables
     init_vars(args)
 
+    # export the configurations
     logging.info(f"configs:\n\t{vars(args)}")
+    write_reader_configs(args.out, vars(args))
 
     try:
         start(args)

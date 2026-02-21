@@ -1,9 +1,5 @@
 # Bedrock Tracer
 
-## TODO
-
-1. Export a config for reader.
-
 Bedrock is an eBPF-based tracing tool that monitors file access patterns over regular I/O operations and memory map operations. This is a cloud-native tracer that enables tracing in regular or container-based platforms.
 
 The tool enables tracing by:

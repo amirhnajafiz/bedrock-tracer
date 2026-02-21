@@ -2,7 +2,6 @@ import logging
 from typing import List
 
 from tracer import Tracer
-from utils.files import create_dir
 from utils.timestamp import export_reference_timestamps
 
 
@@ -12,10 +11,6 @@ def ignite_tracing(output_dir: str, tracers: List[Tracer]):
     :param output_dir: the output directory to store tracing results
     :param tracers: a list of tracers to run
     """
-    # create the output directory
-    create_dir(output_dir)
-    logging.debug("output directory initialized")
-
     # store the reference timestamps to convert raw clock numbers to datetime
     export_reference_timestamps(output_dir)
     logging.debug("reference timestamps exported")
