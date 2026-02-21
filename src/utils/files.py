@@ -15,7 +15,7 @@ def create_dir(directory: str):
 
 def get_tracing_scripts(
     dir_path: str, no_memory_trace: bool = False, quiet_mode: bool = False
-) -> Dict[str:str]:
+) -> Dict[str, str]:
     """Return the path of tracing scripts based on input directory path.
 
     :param dir_path: base directory of the target tracer
