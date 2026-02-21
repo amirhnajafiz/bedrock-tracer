@@ -3,9 +3,9 @@ VENV_DIR ?= .venv
 VENV_PYTHON := $(VENV_DIR)/bin/python
 VENV_PIP := $(VENV_DIR)/bin/pip
 
-.PHONY: all venv pip_install bt_scripts cleanup
+.PHONY: all venv pip_install bt_scripts help cleanup
 
-all: venv pip_install bt_scripts
+all: venv pip_install bt_scripts help
 
 venv:
 	@if [ ! -d "$(VENV_DIR)" ]; then \
@@ -22,6 +22,12 @@ bt_scripts:
 		https://github.com/amirhnajafiz/bedrock-bpftrace.git tmp
 	cp -r tmp/bpftrace ./bpftrace
 	rm -rf tmp
+
+help:
+	@echo "\n\nsetup finished."
+	@echo "run: source $(VENV_DIR)/bin/active"
+	@echo "run: bdtrace --help"
+	@echo ""
 
 cleanup:
 	rm -rf bpftrace

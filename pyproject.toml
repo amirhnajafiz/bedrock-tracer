@@ -13,5 +13,4 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [project.scripts]
-bdtrace = "app:main"
-cbdtrace = "container:main"
+bdtrace = "cli:main"
