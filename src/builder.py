@@ -11,6 +11,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("-m", "--max_str_len", default="150")
     parser.add_argument("-d", "--debug", action="store_true")
     parser.add_argument("-r", "--rotate", action="store_true")
+    parser.add_argument("-q", "--quiet_mode", action="store_true")
+    parser.add_argument("-n", "--no_memory_trace", action="store_true")
     parser.add_argument(
         "-s",
         "--rotate_size",
