@@ -18,7 +18,8 @@ pip_install: venv
 	$(VENV_PIP) install -e .
 
 bt_scripts:
-	git clone --depth 1 --branch v0.0.0 \
+	rm -rf bpftrace
+	git clone --depth 1 --branch v0.0.0-stable \
 		https://github.com/amirhnajafiz/bedrock-bpftrace.git tmp
 	cp -r tmp/bpftrace ./bpftrace
 	rm -rf tmp
