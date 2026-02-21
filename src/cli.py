@@ -1,0 +1,170 @@
+import argparse
+import logging
+import os
+import signal
+import sys
+
+import handlers as hd
+from containers import container_cgroup_id, container_cgroup_id_from_pid
+from containers.docker import docker_container_pid
+from containers.kubernetes import pod_container_id
+from matchbox import extinguish_tracing, ignite_tracing
+from utils import must_support_bpftrace
+
+
+def process(args: argparse.Namespace):
+    tracers = []
+
+    # fill the tracers based on input arguments
+    if args.execute:
+        tracers = hd.handle_execute(
+            args.out, args.execute, args.rotate, args.rotate_size
+        )
+    elif args.pid:
+        tracers = hd.handle_pid(args.out, args.pid, args.rotate, args.rotate_size)
+    elif args.cgroup:
+        if args.procname:
+            tracers = hd.handle_cgroup_and_command(
+                args.out, args.cgroup, args.procname, args.rotate, args.rotate_size
+            )
+        else:
+            tracers = hd.handle_cgroup(
+                args.out, args.cgroup, args.rotate, args.rotate_size
+            )
+    elif args.docker_container:
+        dpid, err = docker_container_pid(args.docker_container)
+        if len(err) > 0:
+            logging.error(err)
+            sys.exit(1)
+
+        cgroup, err = container_cgroup_id_from_pid(dpid)
+        if len(err) > 0:
+            logging.error(err)
+            sys.exit(1)
+
+        if args.procname:
+            tracers = hd.handle_cgroup_and_command(
+                args.out, cgroup, args.procname, args.rotate, args.rotate_size
+            )
+        else:
+            tracers = hd.handle_cgroup(args.out, cgroup, args.rotate, args.rotate_size)
+    elif args.k8s_pod:
+        pcid, err = pod_container_id(
+            args.k8s_namespace, args.k8s_pod, args.k8s_container
+        )
+        if len(err) > 0:
+            logging.error(err)
+            sys.exit(1)
+
+        cgroup, err = container_cgroup_id(pcid)
+        if len(err) > 0:
+            logging.error(err)
+            sys.exit(1)
+
+        if args.procname:
+            tracers = hd.handle_cgroup_and_command(
+                args.out, cgroup, args.procname, args.rotate, args.rotate_size
+            )
+        else:
+            tracers = hd.handle_cgroup(args.out, cgroup, args.rotate, args.rotate_size)
+    elif args.procname:
+        tracers = hd.handle_command(
+            args.out, args.procname, args.rotate, args.rotate_size
+        )
+    else:
+        logging.error("must run with --[execute|pid|cgroup|container|pod|procname]")
+        sys.exit(0)
+
+    # set the termination handlers
+    signal.signal(signal.SIGINT, extinguish_tracing(tracers=tracers))
+    signal.signal(signal.SIGTERM, extinguish_tracing(tracers=tracers))
+
+    # start tracers
+    ignite_tracing(output_dir=args.out, tracers=tracers)
+
+
+def init_vars(args: argparse.Namespace):
+    os.environ["BPFTRACE_MAX_STRLEN"] = args.max_str_len
+    logging.basicConfig(
+        level=logging.DEBUG if args.debug else logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
+
+
+def main():
+    # create an argument parser
+    parser = argparse.ArgumentParser(description="Bedrock tracer.")
+
+    # flags
+    parser.add_argument(
+        "-o",
+        "--out",
+        default="logs",
+        help="Directory path to export the tracing logs (default: logs)",
+    )
+    parser.add_argument(
+        "-m",
+        "--max_str_len",
+        default="150",
+        help="BPF_MAX_STRLEN in bytes (default: 150)",
+    )
+    parser.add_argument(
+        "-d",
+        "--debug",
+        action="store_true",
+        help="Enable debug mode (print debug messages)",
+    )
+    parser.add_argument(
+        "-r",
+        "--rotate",
+        action="store_true",
+        help="Enable log rotation (useful to break large tracing log output)",
+    )
+    parser.add_argument(
+        "-s",
+        "--rotate_size",
+        type=int,
+        default=100 * 1024 * 1024,
+        help="Setting the rotate size (default is 100MB)",
+    )
+
+    # regular tracing options
+    parser.add_argument("--execute", help="Execute a command and start tracing it")
+    parser.add_argument(
+        "--pid",
+        help="Trace an existing process using its PID (must be in running state)",
+    )
+    parser.add_argument(
+        "--cgroup",
+        help="Trace processes with matching cgroup ID (must be a valid cgroup)",
+    )
+    parser.add_argument(
+        "--procname",
+        help="Filter based on procname (works with cgroups, container, kubernetes, or itself)",
+    )
+
+    # docker tracing options
+    parser.add_argument("--docker_container", help="Docker container name to trace")
+
+    # kubernetes tracing options
+    parser.add_argument("--k8s_pod", required=True, help="Kubernetes pod's name")
+    parser.add_argument(
+        "--k8s_container", help="Kubernetes pod's container name to trace"
+    )
+    parser.add_argument(
+        "--k8s_namespace", required=True, help="Kubernetes pod's namespace"
+    )
+
+    # parse the arguments
+    args = parser.parse_args()
+
+    # must support bpftrace
+    must_support_bpftrace()
+
+    # init variables
+    init_vars(args=args)
+
+    logging.info(f"configs:\n\t{vars(args)}")
+
+    # start processing the input
+    process(args=args)
