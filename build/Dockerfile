@@ -6,6 +6,9 @@ ENV PYTHON=python3.12
 ENV VENV_DIR=/usr/local/app/.venv
 ENV PATH="$VENV_DIR/bin:$PATH"
 
+ARG BEDROCK_BPFTRACE=v0.0.0-stable
+ENV BEDROCK_BPFTRACE=${BEDROCK_BPFTRACE}
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     bpftrace \
@@ -41,7 +44,7 @@ COPY src/ ./src/
 COPY tests/ ./tests/
 
 # Clone bpftrace scripts (equivalent to bt_scripts target)
-RUN git clone --depth 1 --branch v0.0.0 \
+RUN git clone --depth 1 --branch $BEDROCK_BPFTRACE \
     https://github.com/amirhnajafiz/bedrock-bpftrace.git tmp && \
     cp -r tmp/bpftrace ./bpftrace && \
     rm -rf tmp

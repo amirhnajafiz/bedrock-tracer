@@ -104,7 +104,7 @@ class MonoTracer(Tracer):
                         logging.debug(f"[{self._tid}] killing tracer")
                         proc.kill()
                     return
-                time.sleep(0.2)
+                time.sleep(0.5)
         except Exception as e:
             logging.error(f"[{self._tid}] failed: {e}")
         finally:

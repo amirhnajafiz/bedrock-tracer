@@ -11,7 +11,6 @@ def build_parser() -> argparse.ArgumentParser:
         "-o", "--out", default="logs", help="output directory (default ./logs)"
     )
     parser.add_argument(
-        "-m",
         "--max_str_len",
         default="150",
         help="ebpf maximum string lenght (default 150)",
@@ -21,13 +20,12 @@ def build_parser() -> argparse.ArgumentParser:
         "-r", "--rotate", action="store_true", help="enable log rotation"
     )
     parser.add_argument(
-        "-q", "--quiet_mode", action="store_true", help="enable queit tracing mode"
+        "--quiet_mode", action="store_true", help="enable queit tracing mode"
     )
     parser.add_argument(
-        "-n", "--no_memory_trace", action="store_true", help="disable memory tracer"
+        "--no_memory_trace", action="store_true", help="disable memory tracer"
     )
     parser.add_argument(
-        "-s",
         "--rotate_size",
         type=int,
         default=100 * 1024 * 1024,
