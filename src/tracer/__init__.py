@@ -4,6 +4,7 @@ import subprocess
 import threading
 import time
 from abc import ABC
+from typing import List
 
 
 class Tracer(ABC):
@@ -30,7 +31,7 @@ class Tracer(ABC):
         self._stop_event = None
         self._t = None
 
-    def with_options(self, options: list[str]):
+    def with_options(self, options: List[str]):
         """
         Add options to the tracer.
 
@@ -38,7 +39,7 @@ class Tracer(ABC):
         """
         self._options += options
 
-    def with_args(self, args: list[str]):
+    def with_args(self, args: List[str]):
         """
         Add args to the tracer.
 

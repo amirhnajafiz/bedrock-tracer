@@ -1,11 +1,12 @@
 import logging
+from typing import List
 
 from tracer import Tracer
 from utils.files import create_dir
 from utils.timestamp import export_reference_timestamps
 
 
-def ignite_tracing(output_dir: str, tracers: list[Tracer]):
+def ignite_tracing(output_dir: str, tracers: List[Tracer]):
     """Start the tracers.
 
     :param output_dir: the output directory to store tracing results
@@ -31,7 +32,7 @@ def ignite_tracing(output_dir: str, tracers: list[Tracer]):
         tracer.wait()
 
 
-def extinguish_tracing(tracers: list[Tracer]):
+def extinguish_tracing(tracers: List[Tracer]):
     """Stop all tracers.
 
     :param tracers: a list of running tracers
