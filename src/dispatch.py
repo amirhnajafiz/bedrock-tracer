@@ -14,6 +14,8 @@ def _build_cgroup_tracers(args: argparse.Namespace, cgid: str) -> List[Tracer]:
             filter_command=args.procname,
             rotate=args.rotate,
             rotate_size=args.rotate_size,
+            no_memory_trace=args.no_memory_trace,
+            quiet_mode=args.quiet_mode,
         )
 
     return hd.handle_cgroup(
@@ -21,6 +23,8 @@ def _build_cgroup_tracers(args: argparse.Namespace, cgid: str) -> List[Tracer]:
         cgid=cgid,
         rotate=args.rotate,
         rotate_size=args.rotate_size,
+        no_memory_trace=args.no_memory_trace,
+        quiet_mode=args.quiet_mode,
     )
 
 
@@ -30,6 +34,8 @@ def mode_execute(args: argparse.Namespace) -> List[Tracer]:
         execute=args.execute,
         rotate=args.rotate,
         rotate_size=args.rotate_size,
+        no_memory_trace=args.no_memory_trace,
+        quiet_mode=args.quiet_mode,
     )
 
 
@@ -39,6 +45,8 @@ def mode_pid(args: argparse.Namespace) -> List[Tracer]:
         pid=args.pid,
         rotate=args.rotate,
         rotate_size=args.rotate_size,
+        no_memory_trace=args.no_memory_trace,
+        quiet_mode=args.quiet_mode,
     )
 
 
@@ -62,4 +70,6 @@ def mode_procname(args: argparse.Namespace) -> List[Tracer]:
         command=args.procname,
         rotate=args.rotate,
         rotate_size=args.rotate_size,
+        no_memory_trace=args.no_memory_trace,
+        quiet_mode=args.quiet_mode,
     )

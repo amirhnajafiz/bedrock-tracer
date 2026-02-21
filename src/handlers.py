@@ -1,3 +1,5 @@
+from typing import List
+
 from tracer import MonoTracer, RotateTracer, Tracer
 from utils import ensure_script
 from utils.files import get_tracing_scripts
@@ -8,7 +10,9 @@ def handle_execute(
     execute: str,
     rotate: bool = False,
     rotate_size: int = 100 * 1024 * 1024,
-) -> list[Tracer]:
+    no_memory_trace: bool = False,
+    quiet_mode: bool = False,
+) -> List[Tracer]:
     """Handle the execute command.
 
     running: bpftrace -o output -c "command" bpftrace/execute/<tracer>.bt
@@ -21,7 +25,9 @@ def handle_execute(
     """
     tracers = []
 
-    for tname, tpath in get_tracing_scripts("bpftrace/execute").items():
+    for tname, tpath in get_tracing_scripts(
+        "bpftrace/execute", no_memory_trace=no_memory_trace, quiet_mode=quiet_mode
+    ).items():
         tracer = __new_tracer(tname, tpath, output_dir, rotate, rotate_size)
         tracer.with_options(["-c", execute])
         tracers.append(tracer)
@@ -34,7 +40,9 @@ def handle_pid(
     pid: str,
     rotate: bool = False,
     rotate_size: int = 100 * 1024 * 1024,
-) -> list[Tracer]:
+    no_memory_trace: bool = False,
+    quiet_mode: bool = False,
+) -> List[Tracer]:
     """Handle the pid tracing.
 
     running: bpftrace -o output bpftrace/pid/<tracer>.bt <pid>
@@ -47,7 +55,9 @@ def handle_pid(
     """
     tracers = []
 
-    for tname, tpath in get_tracing_scripts("bpftrace/pid").items():
+    for tname, tpath in get_tracing_scripts(
+        "bpftrace/pid", no_memory_trace=no_memory_trace, quiet_mode=quiet_mode
+    ).items():
         tracer = __new_tracer(tname, tpath, output_dir, rotate, rotate_size)
         tracer.with_args([pid])
         tracers.append(tracer)
@@ -60,7 +70,9 @@ def handle_command(
     command: str,
     rotate: bool = False,
     rotate_size: int = 100 * 1024 * 1024,
-) -> list[Tracer]:
+    no_memory_trace: bool = False,
+    quiet_mode: bool = False,
+) -> List[Tracer]:
     """Handle the command tracing.
 
     running: bpftrace -o output bpftrace/command/<tracer>.bt <command>
@@ -73,7 +85,9 @@ def handle_command(
     """
     tracers = []
 
-    for tname, tpath in get_tracing_scripts("bpftrace/command").items():
+    for tname, tpath in get_tracing_scripts(
+        "bpftrace/command", no_memory_trace=no_memory_trace, quiet_mode=quiet_mode
+    ).items():
         tracer = __new_tracer(tname, tpath, output_dir, rotate, rotate_size)
         tracer.with_args([command])
         tracers.append(tracer)
@@ -87,7 +101,9 @@ def handle_cgroup_and_command(
     filter_command: str,
     rotate: bool = False,
     rotate_size: int = 100 * 1024 * 1024,
-) -> list[Tracer]:
+    no_memory_trace: bool = False,
+    quiet_mode: bool = False,
+) -> List[Tracer]:
     """Handle the cgroup and command tracing.
 
     running: bpftrace -o output bpftrace/cgroup_and_command/<tracer>.bt <cgroup> <command>
@@ -101,7 +117,11 @@ def handle_cgroup_and_command(
     """
     tracers = []
 
-    for tname, tpath in get_tracing_scripts("bpftrace/cgroup_and_command").items():
+    for tname, tpath in get_tracing_scripts(
+        "bpftrace/cgroup_and_command",
+        no_memory_trace=no_memory_trace,
+        quiet_mode=quiet_mode,
+    ).items():
         tracer = __new_tracer(tname, tpath, output_dir, rotate, rotate_size)
         tracer.with_args([cgid, filter_command])
         tracers.append(tracer)
@@ -114,7 +134,9 @@ def handle_cgroup(
     cgid: str,
     rotate: bool = False,
     rotate_size: int = 100 * 1024 * 1024,
-) -> list[Tracer]:
+    no_memory_trace: bool = False,
+    quiet_mode: bool = False,
+) -> List[Tracer]:
     """Handle the cgroup tracing.
 
     running: bpftrace -o output bpftrace/cgroup/<tracer>.bt <cgroup>
@@ -127,7 +149,9 @@ def handle_cgroup(
     """
     tracers = []
 
-    for tname, tpath in get_tracing_scripts("bpftrace/cgroup").items():
+    for tname, tpath in get_tracing_scripts(
+        "bpftrace/cgroup", no_memory_trace=no_memory_trace, quiet_mode=quiet_mode
+    ).items():
         tracer = __new_tracer(tname, tpath, output_dir, rotate, rotate_size)
         tracer.with_args([cgid])
         tracers.append(tracer)
@@ -136,7 +160,11 @@ def handle_cgroup(
 
 
 def __new_tracer(
-    name: str, path: str, output_dir: str, rotate: str, rotate_size: int
+    name: str,
+    path: str,
+    output_dir: str,
+    rotate: str,
+    rotate_size: int,
 ) -> Tracer:
     """Create a new tracer based on the inputs.
     it also checks if the tracer script exists.

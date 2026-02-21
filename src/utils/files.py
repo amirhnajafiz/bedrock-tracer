@@ -12,12 +12,22 @@ def create_dir(directory: str):
     os.makedirs(directory, exist_ok=True)
 
 
-def get_tracing_scripts(dir_path: str) -> dict[str:str]:
+def get_tracing_scripts(
+    dir_path: str, no_memory_trace: bool = False, quiet_mode: bool = False
+) -> dict[str:str]:
     """Return the path of tracing scripts based on input directory path.
 
     :param dir_path: base directory of the target tracer
     """
-    return {
-        "io": os.path.join(dir_path, "io_trace.bt"),
-        "memory": os.path.join(dir_path, "memory_trace.bt"),
+    out = {
+        "io": os.path.join(
+            dir_path, "silent_io_trace.bt" if quiet_mode else "io_trace.bt"
+        )
     }
+
+    if not no_memory_trace:
+        out["memory"] = os.path.join(
+            dir_path, "silent_memory_trace.bt" if quiet_mode else "memory_trace.bt"
+        )
+
+    return out
