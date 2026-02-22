@@ -23,7 +23,7 @@ Verify the installation:
 
 ```sh
 $ bdtrace --help
-usage: bdtrace [-h] [-o OUT] [-m MAX_STR_LEN] [-d] [-r] [-q] [-n] [-s ROTATE_SIZE]
+usage: bdtrace [-h] [-o OUT] [--max_str_len MAX_STR_LEN] [-d] [-r] [--headless] [--memory_trace] [--rotate_size ROTATE_SIZE]
                (--execute EXECUTE | --pid PID | --cgroup CGROUP | --docker_container DOCKER_CONTAINER | --k8s_pod K8S_POD | --procname PROCNAME)
                [--k8s_container K8S_CONTAINER] [--k8s_namespace K8S_NAMESPACE]
 
@@ -32,14 +32,13 @@ Bedrock tracer is ebpf-based file access pattern tracing tool.
 options:
   -h, --help            show this help message and exit
   -o OUT, --out OUT     output directory (default ./logs)
-  -m MAX_STR_LEN, --max_str_len MAX_STR_LEN
+  --max_str_len MAX_STR_LEN
                         ebpf maximum string lenght (default 150)
   -d, --debug           enable debug logs
   -r, --rotate          enable log rotation
-  -q, --quiet_mode      enable queit tracing mode
-  -n, --no_memory_trace
-                        disable memory tracer
-  -s ROTATE_SIZE, --rotate_size ROTATE_SIZE
+  --headless            enable headless tracing mode (not capturing metadata)
+  --memory_trace        enable memory map tracer
+  --rotate_size ROTATE_SIZE
                         log rotation size (default 100MB)
   --execute EXECUTE     execute and trace
   --pid PID             trace an existing pid
