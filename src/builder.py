@@ -20,10 +20,10 @@ def build_parser() -> argparse.ArgumentParser:
         "-r", "--rotate", action="store_true", help="enable log rotation"
     )
     parser.add_argument(
-        "--quiet_mode", action="store_true", help="enable queit tracing mode"
+        "--headless", action="store_true", help="enable headless tracing mode (not capturing metadata)"
     )
     parser.add_argument(
-        "--no_memory_trace", action="store_true", help="disable memory tracer"
+        "--memory_trace", action="store_true", help="enable memory map tracer"
     )
     parser.add_argument(
         "--rotate_size",
