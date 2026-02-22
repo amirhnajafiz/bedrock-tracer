@@ -1,12 +1,9 @@
 import argparse
 from typing import List, Optional
 
-from resolver import resolve_docker, resolve_k8s
+import resolver
+import utils
 from tracer import MonoTracer, RotateTracer, Tracer
-from utils import ensure_script
-from utils.files import get_tracing_scripts
-
-### helper functions ###
 
 
 def _new_tracer(
@@ -16,7 +13,7 @@ def _new_tracer(
     rotate: bool,
     rotate_size: int,
 ) -> Tracer:
-    ensure_script(path)
+    utils.ensure_script(path)
 
     if rotate:
         tracer = RotateTracer(name, path, output_dir)
@@ -41,7 +38,7 @@ def _build_tracers(
 
     tracers = []
 
-    scripts = get_tracing_scripts(
+    scripts = utils.files.get_tracing_scripts(
         script_group,
         memory_trace=memory_trace,
         headless=headless,
@@ -86,9 +83,6 @@ def _build_cgroup_mode(args: argparse.Namespace, cgid: str) -> List[Tracer]:
     )
 
 
-### main functions ###
-
-
 def mode_execute(args: argparse.Namespace) -> List[Tracer]:
     return _build_tracers(
         script_group="bpftrace/execute",
@@ -118,10 +112,10 @@ def mode_cgroup(args: argparse.Namespace) -> List[Tracer]:
 
 
 def mode_docker(args: argparse.Namespace) -> List[Tracer]:
-    cgroup = resolve_docker(args.docker_container)
+    cgroup = resolver.resolve_docker_container(args.docker_container)
     return _build_cgroup_mode(args, cgroup)
 
 
 def mode_k8s(args: argparse.Namespace) -> List[Tracer]:
-    cgroup = resolve_k8s(args)
+    cgroup = resolver.resolve_k8s_pod(args)
     return _build_cgroup_mode(args, cgroup)

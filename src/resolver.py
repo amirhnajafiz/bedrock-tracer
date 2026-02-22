@@ -1,22 +1,36 @@
-from containers import container_cgroup_id, container_cgroup_id_from_pid
-from containers.docker import docker_container_pid
-from containers.kubernetes import pod_container_id
+from containers import cgroup_id_from_container_id, cgroup_id_from_pid
+from containers.docker import container_pid
+from containers.kubernetes import container_uid
 
 
-def resolve_docker(container_name: str) -> str:
-    pid, err = docker_container_pid(container_name)
+def resolve_docker_container(container_name: str) -> str:
+    """Resolve cgroup id of a docker container pod.
+
+    :param container_name: name or uid
+    :return: cgroup id
+    """
+
+    pid, err = container_pid(container_name)
     if err:
         raise RuntimeError(err)
 
-    cgroup, err = container_cgroup_id_from_pid(pid)
+    cgroup, err = cgroup_id_from_pid(pid)
     if err:
         raise RuntimeError(err)
 
     return cgroup
 
 
-def resolve_k8s(namespace: str, pod: str, container_name: str) -> str:
-    container_id, err = pod_container_id(
+def resolve_k8s_pod(namespace: str, pod: str, container_name: str) -> str:
+    """Resolve cgroup id of a Kubernetes pod.
+
+    :param namespace: pod namespace
+    :param pod: pod name
+    :param container_name: container name inside pod
+    :return: cgroup id
+    """
+
+    container_id, err = container_uid(
         namespace=namespace,
         pod=pod,
         container_name=container_name,
@@ -24,7 +38,7 @@ def resolve_k8s(namespace: str, pod: str, container_name: str) -> str:
     if err:
         raise RuntimeError(err)
 
-    cgroup, err = container_cgroup_id(container_id)
+    cgroup, err = cgroup_id_from_container_id(container_id)
     if err:
         raise RuntimeError(err)
 

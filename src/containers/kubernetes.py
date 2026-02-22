@@ -4,7 +4,7 @@ import time
 from typing import Tuple
 
 
-def pod_container_id(
+def container_uid(
     namespace: str, pod: str, container_name: str, retries: int = 0
 ) -> Tuple[str, str]:
     """Find Kubernetes pod's container id based on its namespace, name, and container using crictl.
@@ -13,7 +13,7 @@ def pod_container_id(
     :param pod: kubernetes pod name
     :param container_name: kubernetes pod's container name
     :param retries: number of retries for finding the container
-    :return: container id
+    :return: (container id, error message)
     """
 
     count = 0

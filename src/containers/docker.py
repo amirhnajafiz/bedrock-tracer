@@ -4,12 +4,12 @@ import time
 from typing import Tuple
 
 
-def docker_container_pid(container: str, retries: int = 0) -> Tuple[str, str]:
-    """Find Docker container PID based on its name or ID.
+def container_pid(container: str, retries: int = 0) -> Tuple[str, str]:
+    """Find a docker container's pid using name or uid.
 
-    :param container: docker container name or id
+    :param container: docker container name or uid
     :param retries: number of retries (0 = infinite)
-    :return: (pid, error_message)
+    :return: (pid, error message)
     """
 
     count = 0
