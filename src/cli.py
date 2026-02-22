@@ -13,7 +13,7 @@ from utils import must_support_bpftrace
 from utils.files import create_dir, write_reader_configs
 
 # mode dispatch map
-MODE_DISPATCH = {
+_MODE_DISPATCH = {
     "execute": dp.mode_execute,
     "pid": dp.mode_pid,
     "cgroup": dp.mode_cgroup,
@@ -24,7 +24,7 @@ MODE_DISPATCH = {
 
 
 def run_tracers(args: argparse.Namespace, tracers: List[Tracer]) -> None:
-    logging.debug(f"prepare to run {len(tracers)} tracers.")
+    logging.debug("prepare to run %d tracers.", len(tracers))
 
     signal.signal(signal.SIGINT, extinguish_tracing(tracers=tracers))
     signal.signal(signal.SIGTERM, extinguish_tracing(tracers=tracers))
@@ -35,16 +35,16 @@ def run_tracers(args: argparse.Namespace, tracers: List[Tracer]) -> None:
 
 
 def resolve_mode(args: argparse.Namespace) -> Callable[[Any], List[Tracer]]:
-    logging.debug("resolving mode")
+    logging.debug("resolving mode.")
 
-    for key, handler in MODE_DISPATCH.items():
+    for key, handler in _MODE_DISPATCH.items():
         if getattr(args, key):
             return handler
-    raise RuntimeError("no tracing mode selected")
+    raise RuntimeError("no tracing mode selected!")
 
 
 def start(args: argparse.Namespace) -> None:
-    logging.debug("processing input arguments")
+    logging.debug("processing input arguments.")
 
     handler = resolve_mode(args)
     tracers = handler(args)
@@ -52,7 +52,7 @@ def start(args: argparse.Namespace) -> None:
     run_tracers(args, tracers)
 
 
-def init_vars(args: argparse.Namespace):
+def init_vars(args: argparse.Namespace) -> None:
     os.environ["BPFTRACE_MAX_STRLEN"] = args.max_str_len
 
     logging.basicConfig(
@@ -62,7 +62,7 @@ def init_vars(args: argparse.Namespace):
 
     # create the output directory
     create_dir(args.out)
-    logging.debug("output directory initialized")
+    logging.debug("output directory initialized.")
 
 
 def main():
@@ -83,5 +83,5 @@ def main():
     try:
         start(args)
     except Exception as e:
-        logging.error(str(e))
+        logging.exception(e)
         sys.exit(1)

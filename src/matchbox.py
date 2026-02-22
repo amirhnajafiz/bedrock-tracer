@@ -13,14 +13,14 @@ def ignite_tracing(output_dir: str, tracers: List[Tracer]):
     """
     # store the reference timestamps to convert raw clock numbers to datetime
     export_reference_timestamps(output_dir)
-    logging.debug("reference timestamps exported")
+    logging.debug("reference timestamps exported.")
 
     # loop over tracers and start
     for tracer in tracers:
         logging.info(f"starting {tracer.name()} ...")
         tracer.start()
 
-    logging.info("all tracers started")
+    logging.info("all tracers started.")
 
     # wait for all tracers
     for tracer in tracers:
@@ -43,6 +43,6 @@ def extinguish_tracing(tracers: List[Tracer]):
             logging.info(f"stopping {tracer.name()} ...")
             tracer.stop()
 
-        logging.info("all tracers stopped")
+        logging.info("all tracers stopped.")
 
     return handle_shutdown

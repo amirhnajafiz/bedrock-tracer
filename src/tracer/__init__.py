@@ -95,13 +95,13 @@ class MonoTracer(Tracer):
 
             while proc.poll() is None:
                 if self._stop_event.is_set():
-                    logging.debug(f"[{self._tid}] stopping tracer")
+                    logging.debug(f"[{self._tid}] stopping tracer.")
                     proc.terminate()
                     try:
                         logging.debug(f"[{self._tid}] waiting for {self._tto}s")
                         proc.wait(timeout=self._tto)
                     except subprocess.TimeoutExpired:
-                        logging.debug(f"[{self._tid}] killing tracer")
+                        logging.debug(f"[{self._tid}] killing tracer.")
                         proc.kill()
                     return
                 time.sleep(0.5)
@@ -135,7 +135,7 @@ class RotateTracer(Tracer):
         filename = os.path.join(
             self._output_dir, f"trace_{self._tid}_{self._file_index}.log"
         )
-        logging.info(f"[{self._tid}] rotating to {filename}")
+        logging.info(f"[{self._tid}] rotating to {filename}.")
 
         self._f = open(filename, "w", buffering=1)  # line-buffered
         self._current_size = 0
@@ -170,12 +170,12 @@ class RotateTracer(Tracer):
             # read until process ends or stop requested
             while True:
                 if self._stop_event.is_set():
-                    logging.debug(f"[{self._tid}] stopping tracer")
+                    logging.debug(f"[{self._tid}] stopping tracer.")
                     proc.terminate()
                     try:
                         proc.wait(timeout=self._tto)
                     except subprocess.TimeoutExpired:
-                        logging.debug(f"[{self._tid}] killing tracer")
+                        logging.debug(f"[{self._tid}] killing tracer.")
                         proc.kill()
                     break
 
@@ -195,4 +195,4 @@ class RotateTracer(Tracer):
         finally:
             if self._f:
                 self._f.close()
-            logging.debug(f"[{self._tid}] exiting tracer")
+            logging.debug(f"[{self._tid}] exiting tracer.")
