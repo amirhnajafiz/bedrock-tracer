@@ -18,9 +18,18 @@ RUN apt-get update && apt-get install -y \
     linux-tools-generic \
     linux-tools-common \
     linux-headers-generic \
-    llvm \
-    clang \
-    iproute2 \
+    libbpfcc-dev \
+    pbfcc-tools \
+    libcereal-dev \
+    llvm-18 \
+    llvm-18-dev \
+    clang-18 \
+    libclang-18-dev \
+    pahole \
+    libgtest-dev \
+    libgmock-dev \
+    libdw-dev \
+    libelf-dev \
     git \
     ca-certificates \
     make \
@@ -33,10 +42,6 @@ RUN apt-get update && apt-get install -y \
     libseccomp2 \
     xz-utils \
     procps \
-    strace \
-    python3.12 \
-    python3.12-venv \
-    python3-pip \
     build-essential \
     cmake \
     flex \
@@ -44,25 +49,23 @@ RUN apt-get update && apt-get install -y \
     libelf-dev zlib1g-dev \
     libfl-dev libedit-dev \
     pkg-config \
-    libssl-dev \
-    docker.io \
-    && rm -rf /var/lib/apt/lists/*
+    libssl-dev
 
 # -----------------------------
 # Build and install libbpf
+# requirements: git, cmake
 # -----------------------------
 RUN git clone --branch ${LIBBPF_VERSION} --depth 1 https://github.com/libbpf/libbpf.git /tmp/libbpf && \
     cd /tmp/libbpf/src && \
     make && \
-    make install && \
+    make install PREFIX=/usr LIBDIR=/usr/lib/x86_64-linux-gnu && \
     ldconfig && \
     rm -rf /tmp/libbpf
 
-# Ensure pkg-config finds libbpf
-ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-
 # -----------------------------
 # Build and install bpftrace
+# requirements: libbpfcc-dev bpfcc-tools libcereal-dev bison flex llvm-18 llvm-18-dev
+#               clang-18 libclang-18 pahole libgtest-dev libgmock-dev libdw-dev libelf-dev
 # -----------------------------
 RUN git clone --branch ${BPFTRACE_VERSION} --depth 1 https://github.com/bpftrace/bpftrace.git /tmp/bpftrace && \
     cd /tmp/bpftrace && \
@@ -72,6 +75,17 @@ RUN git clone --branch ${BPFTRACE_VERSION} --depth 1 https://github.com/bpftrace
     make install && \
     ldconfig && \
     rm -rf /tmp/bpftrace
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    iproute2 \
+    git \
+    strace \
+    python3.12 \
+    python3.12-venv \
+    python3-pip \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------
 # Install crictl
@@ -87,7 +101,6 @@ WORKDIR /usr/local/app
 COPY requirements.txt .
 COPY pyproject.toml ./
 COPY src/ ./src/
-COPY tests/ ./tests/
 
 # Clone bpftrace scripts (equivalent to bt_scripts target)
 RUN git clone --depth 1 --branch $BEDROCK_BPFTRACE \
@@ -102,9 +115,6 @@ RUN $PYTHON -m venv $VENV_DIR
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
     pip install -e .
-
-# Make test script executable
-RUN chmod +x tests/tracings_test.sh
 
 # Default command — start inside venv automatically
 CMD ["/bin/sh"]
