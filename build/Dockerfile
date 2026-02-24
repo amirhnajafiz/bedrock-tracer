@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     flex \
     bison \
+    xxd \
     libelf-dev zlib1g-dev \
     libfl-dev libedit-dev \
     pkg-config \
@@ -63,7 +64,7 @@ RUN git clone --branch ${LIBBPF_VERSION} --depth 1 https://github.com/libbpf/lib
 
 # -----------------------------
 # Build and install bpftrace
-# requirements: libbpfcc-dev bpfcc-tools libcereal-dev bison flex llvm-18 llvm-18-dev
+# requirements: libbpfcc-dev bpfcc-tools libcereal-dev bison flex xxd llvm-18 llvm-18-dev
 #               clang-18 libclang-18 pahole libgtest-dev libgmock-dev libdw-dev libelf-dev
 # -----------------------------
 RUN git clone --branch ${BPFTRACE_VERSION} --depth 1 https://github.com/bpftrace/bpftrace.git /tmp/bpftrace && \
