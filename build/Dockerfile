@@ -19,7 +19,7 @@ RUN apt-get update && apt-get install -y \
     linux-tools-common \
     linux-headers-generic \
     libbpfcc-dev \
-    pbfcc-tools \
+    bpfcc-tools \
     libcereal-dev \
     llvm-18 \
     llvm-18-dev \
@@ -29,7 +29,6 @@ RUN apt-get update && apt-get install -y \
     libgtest-dev \
     libgmock-dev \
     libdw-dev \
-    libelf-dev \
     git \
     ca-certificates \
     make \
