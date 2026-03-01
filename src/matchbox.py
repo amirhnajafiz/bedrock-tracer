@@ -1,19 +1,23 @@
 import logging
-from typing import List
+from typing import Callable, List
 
 from tracer import Tracer
 from utils.timestamp import export_reference_timestamps
 
 
-def ignite_tracing(output_dir: str, tracers: List[Tracer]):
+def ignite_tracing(output_dir: str, tracers: List[Tracer]) -> None:
     """Start the tracers.
 
-    :param output_dir: the output directory to store tracing results
-    :param tracers: a list of tracers to run
+    Parameters
+    ----------
+    output_dir : str
+        The output directory to store tracing results.
+    tracers : List[Tracer]
+        List of tracers to run.
     """
+
     # store the reference timestamps to convert raw clock numbers to datetime
     export_reference_timestamps(output_dir)
-    logging.debug("reference timestamps exported.")
 
     # loop over tracers and start
     for tracer in tracers:
@@ -26,11 +30,21 @@ def ignite_tracing(output_dir: str, tracers: List[Tracer]):
     for tracer in tracers:
         tracer.wait()
 
+    logging.info("passing all waits.")
 
-def extinguish_tracing(tracers: List[Tracer]):
+
+def extinguish_tracing(tracers: List[Tracer]) -> Callable:
     """Stop all tracers.
 
-    :param tracers: a list of running tracers
+    Parameters
+    ----------
+    tracers : List[Tracer]
+        List of running tracers.
+
+    Returns
+    -------
+    handle_shutdown : Callable
+        The termination function.
     """
 
     # return a handle_shutdown function to bind it to termination signals

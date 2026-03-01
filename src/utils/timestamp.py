@@ -7,8 +7,14 @@ import time
 def export_reference_timestamps(output_dir: str):
     """Print and write reference timestamps.
 
-    :param output_dir: the output directory to write timestamps.json file
+    Uses /proc/uptime to export the baseline of logs timestamps.
+
+    Parameters
+    ----------
+    output_dir : str
+        The output directory to write `timestamps.json` file init.
     """
+
     # get the time reference
     ref_wall = time.time()
     try:
