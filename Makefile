@@ -3,6 +3,8 @@ VENV_DIR ?= .venv
 VENV_PYTHON := $(VENV_DIR)/bin/python
 VENV_PIP := $(VENV_DIR)/bin/pip
 
+BEDROCK_BPFTRACE ?= v0.0.1-stable
+
 .PHONY: all venv pip_install bt_scripts help cleanup
 
 all: venv pip_install bt_scripts help
@@ -19,7 +21,7 @@ pip_install: venv
 
 bt_scripts:
 	rm -rf bpftrace
-	git clone --depth 1 --branch v0.0.1 \
+	git clone --depth 1 --branch $(BEDROCK_BPFTRACE) \
 		https://github.com/amirhnajafiz/bedrock-bpftrace.git tmp
 	cp -r tmp/bpftrace ./bpftrace
 	rm -rf tmp

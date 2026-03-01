@@ -32,7 +32,9 @@ def _build_tracers(
     options: Optional[List[str]] = None,
     rotate: bool = False,
     rotate_size: int = 100 * 1024 * 1024,
-    memory_trace: bool = False,
+    disable_vfs: bool = False,
+    disable_io: bool = False,
+    disable_memory_map: bool = False,
     headless: bool = False,
 ) -> List[Tracer]:
 
@@ -40,7 +42,9 @@ def _build_tracers(
 
     scripts = utils.files.get_tracing_scripts(
         script_group,
-        memory_trace=memory_trace,
+        disable_vfs=disable_vfs,
+        disable_io=disable_io,
+        disable_memory_map=disable_memory_map,
         headless=headless,
     )
 
@@ -63,7 +67,9 @@ def _common_kwargs(args: argparse.Namespace) -> dict:
         output_dir=args.out,
         rotate=args.rotate,
         rotate_size=args.rotate_size,
-        memory_trace=args.memory_trace,
+        disable_vfs=args.disable_vfs,
+        disable_io=args.disable_io,
+        disable_memory_map=args.disable_memory_map,
         headless=args.headless,
     )
 
@@ -112,10 +118,14 @@ def mode_cgroup(args: argparse.Namespace) -> List[Tracer]:
 
 
 def mode_docker(args: argparse.Namespace) -> List[Tracer]:
-    cgroup = resolver.resolve_docker_container(args.docker_container)
+    cgroup = resolver.resolve_docker_container(container_name=args.container)
     return _build_cgroup_mode(args, cgroup)
 
 
 def mode_k8s(args: argparse.Namespace) -> List[Tracer]:
-    cgroup = resolver.resolve_k8s_pod(args)
+    cgroup = resolver.resolve_k8s_pod(
+        pod=args.kubernetes__pod,
+        namespace=args.kubernetes__namespace,
+        container_name=args.kubernetes__container,
+    )
     return _build_cgroup_mode(args, cgroup)

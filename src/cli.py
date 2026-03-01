@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 import signal
 import sys
 from typing import Any, Callable, List
@@ -17,9 +16,9 @@ _MODE_DISPATCH = {
     "execute": dp.mode_execute,
     "pid": dp.mode_pid,
     "cgroup": dp.mode_cgroup,
-    "docker_container": dp.mode_docker,
-    "k8s_pod": dp.mode_k8s,
     "procname": dp.mode_procname,
+    "container": dp.mode_docker,
+    "kubernetes__pod": dp.mode_k8s,
 }
 
 
@@ -53,8 +52,6 @@ def start(args: argparse.Namespace) -> None:
 
 
 def init_vars(args: argparse.Namespace) -> None:
-    os.environ["BPFTRACE_MAX_STRLEN"] = args.max_str_len
-
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s: %(message)s",

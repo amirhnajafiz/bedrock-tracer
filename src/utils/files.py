@@ -15,17 +15,26 @@ def create_dir(directory: str):
 
 
 def get_tracing_scripts(
-    dir_path: str, memory_trace: bool = False, headless: bool = False
+    dir_path: str,
+    disable_vfs: bool = False,
+    disable_io: bool = False,
+    disable_memory_map: bool = False,
+    headless: bool = False,
 ) -> Dict[str, str]:
-    """Return the path of tracing scripts based on input directory path.
-    """
-    out = {
-        "io": os.path.join(
+    """Return the path of tracing scripts based on input directory path."""
+    out = {}
+
+    if not disable_vfs:
+        out["vfs"] = os.path.join(
+            dir_path, "headless_vfs_trace.bt" if headless else "vfs_trace.bt"
+        )
+
+    if not disable_io:
+        out["io"] = os.path.join(
             dir_path, "headless_io_trace.bt" if headless else "io_trace.bt"
         )
-    }
 
-    if memory_trace:
+    if not disable_memory_map:
         out["memory"] = os.path.join(
             dir_path, "headless_memory_trace.bt" if headless else "memory_trace.bt"
         )
