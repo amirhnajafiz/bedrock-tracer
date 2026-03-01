@@ -1,19 +1,35 @@
 import logging
 import subprocess
 import time
-from typing import Tuple
 
 
 def container_uid(
     namespace: str, pod: str, container_name: str, retries: int = 0
-) -> Tuple[str, str]:
-    """Find Kubernetes pod's container id based on its namespace, name, and container using crictl.
+) -> str:
+    """Find container uid of Kubernetes pod.
 
-    :param namespace: kubernetes namespace
-    :param pod: kubernetes pod name
-    :param container_name: kubernetes pod's container name
-    :param retries: number of retries for finding the container
-    :return: (container id, error message)
+    Find Kubernetes pod's container id based on its namespace, name, and container using crictl.
+
+    Parameters
+    ----------
+    namespace : str
+        Kubernetes pod's namespace.
+    pod : str
+        Kubernetes pod's name.
+    container_name : str
+        Kubernetes pod's container name.
+    retries : int
+        Number of retries for finding the container.
+
+    Returns
+    -------
+    containerid : str
+        Container uuid from crictl.
+
+    Raises
+    ------
+    RuntimeError
+        If crictl fails.
     """
 
     count = 0
@@ -21,7 +37,7 @@ def container_uid(
         count += 1
 
         logging.debug(
-            "[kubernetes] container not found. waiting for cri to start the container ..."
+            "[kubernetes] container not found. waiting for CRI to start the container ..."
         )
 
         try:
@@ -32,7 +48,7 @@ def container_uid(
                 check=True,
             )
         except subprocess.CalledProcessError as exc:
-            return ("", f"[kubernetes] error running crictl ps: {exc}")
+            raise RuntimeError(f"error running crictl ps: {exc}")
 
         containerid = None
         for line in result.stdout.splitlines()[1:]:
@@ -43,8 +59,10 @@ def container_uid(
                 break
 
         if containerid:
-            return (containerid, "")
+            return containerid
 
         time.sleep(0.5)
 
-    return ("", "[kubernetes] container not found, hit retries threshold.")
+    raise RuntimeError(
+        f"could not determine UUID for container '{container_name}', hit retires threshold."
+    )

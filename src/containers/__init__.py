@@ -1,12 +1,24 @@
+import logging
 import subprocess
-from typing import Tuple
 
 
-def cgroup_id_from_container_id(container_id: str) -> Tuple[str, str]:
+def cgroup_id_from_container_id(container_id: str) -> str:
     """Find a container's cgroup id using its container uid.
 
-    :param container_id: the container uid
-    :return: (cgroup id, error message)
+    Parameters
+    ----------
+    container_id : str
+        The container uuid.
+
+    Returns
+    -------
+    cgroupid : str
+        The container cgroup id.
+
+    Raises
+    ------
+    RuntimeError
+        If cgroup path is not found or stat process fails.
     """
 
     try:
@@ -19,7 +31,9 @@ def cgroup_id_from_container_id(container_id: str) -> Tuple[str, str]:
 
         path = find_proc.stdout.strip().splitlines()[0]
     except Exception as e:
-        return ("", f"could not find cgroup path: {e}")
+        raise RuntimeError(f"could not find cgroup path: {e}")
+
+    logging.debug("cgroup path for %s is found %s.", container_id, path)
 
     try:
         stat_proc = subprocess.run(
@@ -28,16 +42,28 @@ def cgroup_id_from_container_id(container_id: str) -> Tuple[str, str]:
 
         cgroupid = stat_proc.stdout.strip()
 
-        return (cgroupid, "")
+        return cgroupid
     except Exception as e:
-        return ("", f"could not determine cgroupid for {path}: {e}")
+        raise RuntimeError(f"could not determine cgroupid for {path}: {e}")
 
 
-def cgroup_id_from_pid(pid: str) -> Tuple[str, str]:
+def cgroup_id_from_pid(pid: str) -> str:
     """Find a process's cgroup id using its pid.
 
-    :param pid: process pid
-    :return: (cgroup id, error message)
+    Parameters
+    ----------
+    pid : str
+        The process pid.
+
+    Returns
+    -------
+    cgroupid : str
+        The container cgroup id.
+
+    Raises
+    ------
+    RuntimeError
+        If cgroup path is not found or stat process fails.
     """
 
     try:
@@ -45,9 +71,11 @@ def cgroup_id_from_pid(pid: str) -> Tuple[str, str]:
             line = f.readline().strip()
             cgroup_path = line.split(":")[-1]
     except Exception as e:
-        return ("", f"could not read cgroup file: {e}")
+        raise RuntimeError(f"could not read cgroup file: {e}")
 
     full_path = f"/sys/fs/cgroup{cgroup_path}"
+
+    logging.debug("cgroup path for %s is found %s.", pid, full_path)
 
     try:
         stat_proc = subprocess.run(
@@ -57,6 +85,6 @@ def cgroup_id_from_pid(pid: str) -> Tuple[str, str]:
             check=True,
         )
 
-        return (stat_proc.stdout.strip(), "")
+        return stat_proc.stdout.strip()
     except Exception as e:
-        return ("", f"could not stat cgroup path {full_path}: {e}")
+        raise RuntimeError(f"could not stat cgroup path {full_path}: {e}")

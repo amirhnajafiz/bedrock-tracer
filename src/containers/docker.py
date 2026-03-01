@@ -1,22 +1,36 @@
 import logging
 import subprocess
 import time
-from typing import Tuple
 
 
-def container_pid(container: str, retries: int = 0) -> Tuple[str, str]:
-    """Find a docker container's pid using name or uid.
+def container_pid(container: str, retries: int = 0) -> str:
+    """Find a container's PID using docker inspect.
 
-    :param container: docker container name or uid
-    :param retries: number of retries (0 = infinite)
-    :return: (pid, error message)
+    Parameters
+    ----------
+    container : str
+        Container name or uuid.
+    retries : int
+        Maximum number of retries
+
+    Returns
+    -------
+    pid : str
+        Container's PID.
+
+    Raises
+    ------
+    RuntimeError
+        If docker inspect fails.
     """
 
     count = 0
     while retries == 0 or count < retries:
         count += 1
 
-        logging.debug("[docker] container not found or not running. waiting...")
+        logging.debug(
+            "[docker] container not found or not running. waiting for docker daemon to start the container..."
+        )
 
         try:
             result = subprocess.run(
@@ -30,14 +44,13 @@ def container_pid(container: str, retries: int = 0) -> Tuple[str, str]:
 
             # docker returns "0" if container exists but is not running
             if pid and pid != "0":
-                return (pid, "")
+                return pid
 
         except subprocess.CalledProcessError as exc:
-            return ("", f"[docker] failed to call inspect: {exc}")
+            raise RuntimeError(f"failed docker inspect: {exc}")
 
         time.sleep(0.5)
 
-    return (
-        "",
-        f"[docker] could not determine PID for container '{container}', hit retires threshold.",
+    raise RuntimeError(
+        f"could not determine PID for container '{container}', hit retires threshold."
     )
