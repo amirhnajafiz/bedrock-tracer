@@ -8,18 +8,25 @@ from typing import List
 
 
 class Tracer(ABC):
-    """Tracer runs bpftrace scripts."""
+    """Tracer is an abstract class of the tracing logic."""
 
     def __init__(
         self, tid: str, script: str, output_dir: str, termination_timeout: int = 2
     ):
         """Tracer constructor.
 
-        :param tid: the tracer id for debugging
-        :param script: the bpftrace script to run
-        :param output_dir: the output directory to export logs
-        :param termination_timeout: tracer termination timeout in seconds
+        Parameters
+        ----------
+        tid : str
+            The tracer id for debugging.
+        script : str
+            The bpftrace script full path.
+        output_dir : str
+            The output directory to export tracing logs.
+        termination_timeout : int
+            Tracer termination timeout in seconds.
         """
+
         self._tid = tid  # tracer id
         self._script = script  # bpftrace script
         self._tto = termination_timeout
@@ -31,41 +38,57 @@ class Tracer(ABC):
         self._stop_event = None
         self._t = None
 
-    def with_options(self, options: List[str]):
-        """
-        Add options to the tracer.
+    def with_options(self, options: List[str]) -> None:
+        """Add options to the tracer.
 
-        :param options: a list of options to append the current options
+        Parameters
+        ----------
+        options : List
+            List of options to append the current options.
         """
+
         self._options += options
 
-    def with_args(self, args: List[str]):
-        """
-        Add args to the tracer.
+    def with_args(self, args: List[str]) -> None:
+        """Add args to the tracer.
 
-        :param args: a list of args to append the current args
+        Parameters
+        ----------
+        args : List
+            List of args to append the current args.
         """
+
         self._args += args
 
-    def start(self):
+    def start(self) -> None:
         """Start a tracer by calling the __start_tracer in a thread."""
+
         self._stop_event = threading.Event()
         self._t = threading.Thread(target=self.start_tracer, args=(), daemon=True)
         self._t.start()
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the tracer by terminating its process and thread."""
+
         self._stop_event.set()
         if self._t:
             self._t.join()
 
-    def wait(self):
+    def wait(self) -> None:
         """Wait for the tracing process to finish."""
+
         if self._t:
             self._t.join()
 
     def name(self) -> str:
-        """Get the name of the tracer."""
+        """Get the name of the tracer.
+
+        Returns
+        -------
+        tid : str
+            Tracer id.
+        """
+
         return self._tid
 
     @classmethod
@@ -74,10 +97,11 @@ class Tracer(ABC):
 
 
 class MonoTracer(Tracer):
-    """Tracer runs bpftrace in a separate thread with output by bpftrace."""
+    """MonoTracer runs a single bpftrace script and exports the logs into one file."""
 
-    def start_tracer(self):
+    def start_tracer(self) -> None:
         """Start tracer in a new process and wait until its over or the stop event is received."""
+
         self.with_options(
             ["-o", os.path.join(self._output_dir, f"trace_{self._tid}_0.log")]
         )
@@ -97,13 +121,16 @@ class MonoTracer(Tracer):
                 if self._stop_event.is_set():
                     logging.debug(f"[{self._tid}] stopping tracer.")
                     proc.terminate()
+
                     try:
                         logging.debug(f"[{self._tid}] waiting for {self._tto}s")
                         proc.wait(timeout=self._tto)
                     except subprocess.TimeoutExpired:
                         logging.debug(f"[{self._tid}] killing tracer.")
                         proc.kill()
+
                     return
+
                 time.sleep(0.5)
         except Exception as e:
             logging.error(f"[{self._tid}] failed: {e}")
@@ -112,36 +139,50 @@ class MonoTracer(Tracer):
 
 
 class RotateTracer(Tracer):
-    """Tracer runs bpftrace in a separate thread with output log rotation."""
+    """RotateTracer runs a single bpftrace script and exports the logs using a log rotation method."""
 
     def with_rotate_size(
         self,
         rotate_size: int = 100 * 1024 * 1024,
-    ):
+    ) -> None:
         """With rotate size limit (default is 100Mb per file).
 
-        :param rotate_size: the file size for rotate
+        Parameters
+        ----------
+        rotate_size : int
+            The file size for rotate.
         """
+
         self._rotate_size = rotate_size
         self._file_index = 0
         self._current_size = 0
         self._f = None
 
-    def __open_new_file(self):
+    def __open_new_file(self) -> None:
         """Rotate output file."""
+
         if self._f:
             self._f.close()
 
         filename = os.path.join(
             self._output_dir, f"trace_{self._tid}_{self._file_index}.log"
         )
+
         logging.info(f"[{self._tid}] rotating to {filename}.")
 
         self._f = open(filename, "w", buffering=1)  # line-buffered
         self._current_size = 0
         self._file_index += 1
 
-    def __write_line(self, line: str):
+    def __write_line(self, line: str) -> None:
+        """Write a single line.
+
+        Parameters
+        ----------
+        line : str
+            The input line to write into the file.
+        """
+
         data = line.encode()
         if self._current_size + len(data) > self._rotate_size:
             self.__open_new_file()
@@ -149,8 +190,9 @@ class RotateTracer(Tracer):
         self._f.write(line)
         self._current_size += len(data)
 
-    def start_tracer(self):
+    def start_tracer(self) -> None:
         """Start bpftrace and rotate logs while reading stdout."""
+
         bt_cmd = ["bpftrace"] + self._options + [self._script] + self._args
 
         logging.debug(f"[{self._tid}] starting tracer: {' '.join(bt_cmd)}")
@@ -172,20 +214,25 @@ class RotateTracer(Tracer):
                 if self._stop_event.is_set():
                     logging.debug(f"[{self._tid}] stopping tracer.")
                     proc.terminate()
+
                     try:
                         proc.wait(timeout=self._tto)
                     except subprocess.TimeoutExpired:
                         logging.debug(f"[{self._tid}] killing tracer.")
                         proc.kill()
+
                     break
 
                 # non-blocking line read
                 line = proc.stdout.readline()
+
                 if not line:
                     # process probably exited
                     if proc.poll() is not None:
                         break
+
                     time.sleep(0.05)
+
                     continue
 
                 # write line safely with rotation

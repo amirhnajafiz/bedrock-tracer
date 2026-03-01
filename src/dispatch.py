@@ -5,6 +5,7 @@ from typing import List, Optional
 import resolver
 import utils
 from tracer import MonoTracer, RotateTracer, Tracer
+from tracer.files import get_tracing_scripts
 
 
 def _new_tracer(
@@ -105,7 +106,7 @@ def _build_tracers(
     tracers = []
 
     # get tracing scripts
-    scripts = utils.files.get_tracing_scripts(
+    scripts = get_tracing_scripts(
         script_group,
         disable_vfs=disable_vfs,
         disable_io=disable_io,
