@@ -1,5 +1,7 @@
-# Use official Ubuntu 24.04 as base image
-FROM ubuntu:24.04
+# ============================
+# Stage 1 — Builder
+# ============================
+FROM ubuntu:24.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHON=python3.12
@@ -10,14 +12,12 @@ ENV LIBBPF_VERSION=v1.5.0
 ENV BPFTRACE_VERSION=v0.24.0
 ENV CRICTL_VERSION=v1.35.0
 
-ARG BEDROCK_BPFTRACE=v0.0.0-stable
+ARG BEDROCK_BPFTRACE=v0.0.1-stable
 ENV BEDROCK_BPFTRACE=${BEDROCK_BPFTRACE}
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     linux-tools-generic \
-    linux-tools-common \
-    linux-headers-generic \
     libbpfcc-dev \
     bpfcc-tools \
     libcereal-dev \
@@ -49,17 +49,17 @@ RUN apt-get update && apt-get install -y \
     libelf-dev zlib1g-dev \
     libfl-dev libedit-dev \
     pkg-config \
-    libssl-dev
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------
 # Build and install libbpf
 # requirements: git, cmake
 # -----------------------------
-RUN git clone --branch ${LIBBPF_VERSION} --depth 1 https://github.com/libbpf/libbpf.git /tmp/libbpf && \
-    cd /tmp/libbpf/src && \
-    make && \
-    make install PREFIX=/usr LIBDIR=/usr/lib/x86_64-linux-gnu && \
-    ldconfig && \
+RUN git clone --depth 1 --branch ${LIBBPF_VERSION} \
+    https://github.com/libbpf/libbpf.git /tmp/libbpf && \
+    make -C /tmp/libbpf/src -j$(nproc) && \
+    make -C /tmp/libbpf/src install PREFIX=/usr LIBDIR=/usr/lib/x86_64-linux-gnu && \
     rm -rf /tmp/libbpf
 
 # -----------------------------
@@ -67,13 +67,15 @@ RUN git clone --branch ${LIBBPF_VERSION} --depth 1 https://github.com/libbpf/lib
 # requirements: libbpfcc-dev bpfcc-tools libcereal-dev bison flex xxd llvm-18 llvm-18-dev
 #               clang-18 libclang-18 pahole libgtest-dev libgmock-dev libdw-dev libelf-dev
 # -----------------------------
-RUN git clone --branch ${BPFTRACE_VERSION} --depth 1 https://github.com/bpftrace/bpftrace.git /tmp/bpftrace && \
-    cd /tmp/bpftrace && \
-    mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release .. && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig && \
+RUN git clone --depth 1 --branch ${BPFTRACE_VERSION} \
+    https://github.com/bpftrace/bpftrace.git /tmp/bpftrace && \
+    cmake -S /tmp/bpftrace -B /tmp/bpftrace/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DLLVM_DIR=/usr/lib/llvm-18/lib/cmake/llvm \
+        -DClang_DIR=/usr/lib/llvm-18/lib/cmake/clang && \
+    cmake --build /tmp/bpftrace/build -j$(nproc) && \
+    cmake --install /tmp/bpftrace/build && \
+    strip /usr/local/bin/bpftrace && \
     rm -rf /tmp/bpftrace
 
 # Install system dependencies
@@ -85,6 +87,30 @@ RUN apt-get update && apt-get install -y \
     python3.12-venv \
     python3-pip \
     docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+# ============================
+# Stage 2 — Runtime
+# ============================
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libelf1 \
+    zlib1g \
+    libedit2 \
+    libssl3 \
+    libdw1 \
+    libseccomp2 \
+    libbpfcc-dev \
+    bpfcc-tools \
+    kmod \
+    procps \
+    ca-certificates \
+    clang-18 \
+    libclang-18-dev \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------
@@ -115,6 +141,9 @@ RUN $PYTHON -m venv $VENV_DIR
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
     pip install -e .
+
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libbpf* /usr/lib/x86_64-linux-gnu/
 
 # Default command — start inside venv automatically
 CMD ["/bin/sh"]
