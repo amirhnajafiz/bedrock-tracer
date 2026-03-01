@@ -68,7 +68,7 @@ def resolve_mode(args: argparse.Namespace) -> Callable[[Any], List[Tracer]]:
 
     Raises
     ------
-    [RuntimeError]
+    RuntimeError
         If none of the required flags are set.
     """
 

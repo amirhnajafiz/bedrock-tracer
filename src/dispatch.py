@@ -1,4 +1,5 @@
 import argparse
+import logging
 from typing import List, Optional
 
 import resolver
@@ -13,6 +14,35 @@ def _new_tracer(
     rotate: bool,
     rotate_size: int,
 ) -> Tracer:
+    """New tracer instance.
+
+    Builds and returns a new tracer.
+
+    Parameters
+    ----------
+    name : str
+        Tracer name.
+    path : str
+        Tracer bpftrace script path.
+    output_dir : str
+        Tracer output logs directory path.
+    rotate : bool
+        Return a RotateTracer or MonoTracer.
+    rotate_size : int
+        RotateTracer log rotation size.
+
+    Returns
+    -------
+    tracer : Tracer
+        A RotateTracer or MonoTracer.
+
+    Raises
+    ------
+    RuntimeError
+        If the bpftrace script path doesn't exists.
+    """
+
+    logging.debug("searching for %s script.", path)
     utils.ensure_script(path)
 
     if rotate:
@@ -20,6 +50,8 @@ def _new_tracer(
         tracer.with_rotate_size(rotate_size=rotate_size)
     else:
         tracer = MonoTracer(name, path, output_dir)
+
+    logging.debug("rotate tracer." if rotate else "mono tracer.")
 
     return tracer
 
@@ -37,9 +69,42 @@ def _build_tracers(
     disable_memory_map: bool = False,
     headless: bool = False,
 ) -> List[Tracer]:
+    """Build and return tracers.
+
+    Parse the input arguments, build, and return tracer instances.
+
+    Parameters
+    ----------
+    script_group : str
+        The bpftrace scripts directory and subdirectory.
+    output_dir : str
+        Tracer logs output directory.
+    args : Optional[List[str]]
+        Tracer arguments.
+    options : Optional[List[str]]
+        Tracer flags/options.
+    rotate : bool
+        Enable rotation.
+    rotate_size : int
+        Rotation size.
+    disable_vfs : bool
+        Disable VFS tracer.
+    disable_io : bool
+        Disable IO tracer.
+    disable_memory_map : bool
+        Disable memory map tracer.
+    headless : bool
+        Headless tracing mode.
+
+    Returns
+    -------
+    tracers : List[Tracer]
+        A list of tracer instances.
+    """
 
     tracers = []
 
+    # get tracing scripts
     scripts = utils.files.get_tracing_scripts(
         script_group,
         disable_vfs=disable_vfs,
@@ -49,6 +114,8 @@ def _build_tracers(
     )
 
     for tname, tpath in scripts.items():
+        logging.debug("building tracer for %s : %s", tname, tpath)
+
         tracer = _new_tracer(tname, tpath, output_dir, rotate, rotate_size)
 
         if args:
