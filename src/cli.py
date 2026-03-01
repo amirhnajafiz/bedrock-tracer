@@ -5,13 +5,14 @@ import sys
 from typing import Any, Callable, List
 
 import dispatch as dp
+import utils
 from builder import build_parser
 from matchbox import extinguish_tracing, ignite_tracing
 from tracer import Tracer
-from utils import must_support_bpftrace
-from utils.files import create_dir, write_reader_configs
 
-# mode dispatch map
+# MODE Dispatch maps the cli flags to Python Callables.
+# Callables are a part of dispatch.py module. They have `mode_*` prefix
+# and accept the argparser parameters to run a Callable based on user input.
 _MODE_DISPATCH = {
     "execute": dp.mode_execute,
     "pid": dp.mode_pid,
@@ -23,27 +24,70 @@ _MODE_DISPATCH = {
 
 
 def run_tracers(args: argparse.Namespace, tracers: List[Tracer]) -> None:
+    """Take a list of tracers and start them.
+
+    Run tracers accept a list of tracers type and sets termination handlers before
+    passing the tracers to matchbox module.
+
+    Parameters
+    ----------
+    args : argparser.Namespace
+        Python argparser object that stores user input flags.
+    tracers : List[Tracer]
+        List of tracers that is returned by handler.
+    """
+
     logging.debug("prepare to run %d tracers.", len(tracers))
 
     signal.signal(signal.SIGINT, extinguish_tracing(tracers=tracers))
     signal.signal(signal.SIGTERM, extinguish_tracing(tracers=tracers))
 
-    logging.debug("term signal handlers bounded.")
+    logging.debug(
+        "termination signal handlers are bounded for %s and %s.",
+        signal.SIGINT,
+        signal.SIGTERM,
+    )
 
     ignite_tracing(output_dir=args.out, tracers=tracers)
 
 
 def resolve_mode(args: argparse.Namespace) -> Callable[[Any], List[Tracer]]:
-    logging.debug("resolving mode.")
+    """Resolve tracer mode.
+
+    Resolve tracing mode using the user input flags and MODE_DISPATCH.
+
+    Parameters
+    ----------
+    args : argparser.Namespace
+        Python argparser object that stores user input flags.
+
+    Returns
+    -------
+    handler : Callable
+        A handler that returns a list of tracers to pass to run_tracers function.
+
+    Raises
+    ------
+    [RuntimeError]
+        If none of the required flags are set.
+    """
 
     for key, handler in _MODE_DISPATCH.items():
         if getattr(args, key):
+            logging.debug("selected %s handler.", key)
+
             return handler
     raise RuntimeError("no tracing mode selected!")
 
 
 def start(args: argparse.Namespace) -> None:
-    logging.debug("processing input arguments.")
+    """Start cli.
+
+    Parameters
+    ----------
+    args : argparser.Namespace
+        Python argparser object that stores user input flags.
+    """
 
     handler = resolve_mode(args)
     tracers = handler(args)
@@ -52,30 +96,40 @@ def start(args: argparse.Namespace) -> None:
 
 
 def init_vars(args: argparse.Namespace) -> None:
+    """Initialize variables.
+
+    Sets some global variables such as logger and output directory.
+
+    Parameters
+    ----------
+    args : argparser.Namespace
+        Python argparser object that stores user input flags.
+    """
+
     logging.basicConfig(
         level=logging.DEBUG if args.debug else logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s: %(message)s",
     )
 
     # create the output directory
-    create_dir(args.out)
-    logging.debug("output directory initialized.")
+    utils.files.create_dir(args.out)
+    logging.debug("output directory %s initialized.", args.out)
 
 
 def main():
-    # build a parser and get input arguments
+    # build a parser to get input arguments
     parser = build_parser()
     args = parser.parse_args()
 
     # check system requirements
-    must_support_bpftrace()
+    utils.must_support_bpftrace()
 
     # initialize variables
     init_vars(args)
 
     # export the configurations
     logging.info(f"configs:\n\t{vars(args)}")
-    write_reader_configs(args.out, vars(args))
+    utils.files.write_reader_configs(args.out, vars(args))
 
     try:
         start(args)
