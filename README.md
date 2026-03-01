@@ -23,33 +23,34 @@ Verify the installation:
 
 ```sh
 $ bdtrace --help
-usage: bdtrace [-h] [-o OUT] [--max_str_len MAX_STR_LEN] [-d] [-r] [--headless] [--memory_trace] [--rotate_size ROTATE_SIZE]
-               (--execute EXECUTE | --pid PID | --cgroup CGROUP | --docker_container DOCKER_CONTAINER | --k8s_pod K8S_POD | --procname PROCNAME)
-               [--k8s_container K8S_CONTAINER] [--k8s_namespace K8S_NAMESPACE]
+usage: bdtrace [-h] [-o OUT] [-r] [--rotate_size ROTATE_SIZE] [--headless] [--disable_vfs] [--disable_io] [--disable_memory_map] [-d]
+               (--execute EXECUTE | --pid PID | --cgroup CGROUP | --procname PROCNAME | --container CONTAINER | --kubernetes__pod KUBERNETES__POD)
+               [--kubernetes__container KUBERNETES__CONTAINER] [--kubernetes__namespace KUBERNETES__NAMESPACE]
 
-Bedrock tracer is ebpf-based file access pattern tracing tool.
+Bedrock is an ebpf-based file system tracing tool.
 
 options:
   -h, --help            show this help message and exit
   -o OUT, --out OUT     output directory (default ./logs)
-  --max_str_len MAX_STR_LEN
-                        ebpf maximum string lenght (default 150)
-  -d, --debug           enable debug logs
   -r, --rotate          enable log rotation
-  --headless            enable headless tracing mode (not capturing metadata)
-  --memory_trace        enable memory map tracer
   --rotate_size ROTATE_SIZE
                         log rotation size (default 100MB)
+  --headless            enable headless tracing mode (not capturing metadata)
+  --disable_vfs         disable vfs tracer
+  --disable_io          disable io tracer
+  --disable_memory_map  disable memory map tracer
+  -d, --debug           enable debug logs
   --execute EXECUTE     execute and trace
   --pid PID             trace an existing pid
   --cgroup CGROUP       trace with matching cgroup
-  --docker_container DOCKER_CONTAINER
-                        trace docker container
-  --k8s_pod K8S_POD     trace kubernetes pod
   --procname PROCNAME   trace by matching process command name
-  --k8s_container K8S_CONTAINER
+  --container CONTAINER
+                        trace a docker container
+  --kubernetes__pod KUBERNETES__POD
+                        trace a kubernetes pod
+  --kubernetes__container KUBERNETES__CONTAINER
                         set kubernetes container to trace
-  --k8s_namespace K8S_NAMESPACE
+  --kubernetes__namespace KUBERNETES__NAMESPACE
                         set the kubernetes pod's namespace
 ```
 

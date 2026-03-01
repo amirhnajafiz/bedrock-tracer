@@ -8,6 +8,7 @@ services:
       dockerfile: build/core/Dockerfile
     volumes:
       - /sys:/sys:rw
+      - /lib/modules:/lib/modules:ro
     ulimits:
       memlock:
         soft: -1
@@ -40,6 +41,7 @@ services:
         hard: -1
     volumes:
       - /sys:/sys:rw
+      - /lib/modules:/lib/modules:ro
       - ./tests/logs:/logs:rw
     entrypoint: ["bdtrace"]
     command: ["--execute", "ls", "-o", "/logs/trace_ls"]
@@ -62,16 +64,17 @@ services:
         hard: -1
     volumes:
       - /sys:/sys:rw
+      - /lib/modules:/lib/modules:ro
       - ./tests/logs:/logs:rw
     entrypoint: ["bdtrace"]
     command: [
       "-o",
       "/logs/prom-logs",
-      "--k8s_pod",
+      "--kubernetes__pod",
       "prometheus-k8s-0",
-      "--k8s_namespace",
+      "--kubernetes__namespace",
       "monitoring",
-      "--k8s_container",
+      "--kubernetes__container",
       "prometheus"
     ]
 
