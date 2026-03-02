@@ -8,6 +8,15 @@ ARG BEDROCK_BPFTRACE=v0.0.2-stable
 ENV BEDROCK_BPFTRACE=${BEDROCK_BPFTRACE}
 ENV CRICTL_VERSION=v1.35.0
 
+# Install required packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.12-venv \
+    python3.12-dev \
+    python3-pip \
+    git \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /usr/local/app
 
