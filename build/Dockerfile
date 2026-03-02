@@ -7,6 +7,9 @@ FROM ghcr.io/amirhnajafiz/bedrock-bpftrace:v0.0.2-stable
 ARG BEDROCK_BPFTRACE=v0.0.2-stable
 ENV BEDROCK_BPFTRACE=${BEDROCK_BPFTRACE}
 ENV CRICTL_VERSION=v1.35.0
+ENV PYTHON=python3.12
+ENV VENV_DIR=/usr/local/app/.venv
+ENV PATH="$VENV_DIR/bin:$PATH"
 
 # Install required packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
