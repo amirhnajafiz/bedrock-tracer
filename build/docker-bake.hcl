@@ -3,7 +3,7 @@ variable "TAG" {
 }
 
 variable "BEDROCK_BPFTRACE" {
-  default = "v0.0.1-stable"
+  default = "v0.0.2-stable"
 }
 
 group "default" {

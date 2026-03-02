@@ -3,7 +3,7 @@ VENV_DIR ?= .venv
 VENV_PYTHON := $(VENV_DIR)/bin/python
 VENV_PIP := $(VENV_DIR)/bin/pip
 
-BEDROCK_BPFTRACE ?= v0.0.1-stable
+BEDROCK_BPFTRACE ?= v0.0.2-stable
 
 .PHONY: all venv pip_install bt_scripts help cleanup
 

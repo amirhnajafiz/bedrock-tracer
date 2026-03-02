@@ -1,5 +1,28 @@
 import os
 import shutil
+import subprocess
+
+
+def ensure_kernel_support():
+    """Check if the kernel supports eBPF.
+
+    Check if the kernel supports eBPF by running /usr/local/bedrock/kernel_support.sh.
+    This script checks all the needed kernel features for Bedrock to work properly.
+
+    Raises
+    ------
+    RuntimeError
+        If the kernel does not support eBPF or if the support check script is not found.
+    """
+
+    script_path = "/usr/local/bedrock/kernel_support.sh"
+
+    if not os.path.exists(script_path):
+        raise RuntimeError(f"kernel support script '{script_path}' not found.")
+
+    result = subprocess.run([script_path], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"kernel support check failed: {result.stderr}")
 
 
 def must_support_bpftrace():

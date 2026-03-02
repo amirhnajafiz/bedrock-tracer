@@ -20,6 +20,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="log rotation size (default 100MB)",
     )
     parser.add_argument(
+        "--version",
+        default="v1",
+        help="bedrock-bpftrace scripts version (default v1, which reduces output log size but increases the risk of missing events.)",
+    )
+    parser.add_argument(
         "--headless",
         action="store_true",
         help="enable headless tracing mode (not capturing metadata)",
