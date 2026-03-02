@@ -122,7 +122,12 @@ def main():
     args = parser.parse_args()
 
     # check system requirements
-    utils.must_support_bpftrace()
+    try:
+        utils.ensure_kernel_support()
+        utils.must_support_bpftrace()
+    except Exception as e:
+        logging.exception(e)
+        sys.exit(1)
 
     # initialize variables
     init_vars(args)

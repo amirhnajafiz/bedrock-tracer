@@ -23,18 +23,19 @@ Verify the installation:
 
 ```sh
 $ bdtrace --help
-usage: bdtrace [-h] [-o OUT] [-r] [--rotate_size ROTATE_SIZE] [--headless] [--disable_vfs] [--disable_io] [--disable_memory_map] [-d]
-               (--execute EXECUTE | --pid PID | --cgroup CGROUP | --procname PROCNAME | --container CONTAINER | --kubernetes__pod KUBERNETES__POD)
-               [--kubernetes__container KUBERNETES__CONTAINER] [--kubernetes__namespace KUBERNETES__NAMESPACE]
+usage: bdtrace [-h] [-o OUT] [-r] [--rotate_size ROTATE_SIZE] [--version VERSION] [--headless] [--disable_vfs] [--disable_io] [--disable_memory_map] [-d]
+               (--execute EXECUTE | --pid PID | --cgroup CGROUP | --procname PROCNAME | --container CONTAINER | --kubernetes__pod KUBERNETES__POD) [--kubernetes__container KUBERNETES__CONTAINER]
+               [--kubernetes__namespace KUBERNETES__NAMESPACE]
 
 Bedrock is an ebpf-based file system tracing tool.
 
-options:
+optional arguments:
   -h, --help            show this help message and exit
   -o OUT, --out OUT     output directory (default ./logs)
   -r, --rotate          enable log rotation
   --rotate_size ROTATE_SIZE
                         log rotation size (default 100MB)
+  --version VERSION     bedrock-bpftrace scripts version (default v1, which reduces output log size but increases the risk of missing events.)
   --headless            enable headless tracing mode (not capturing metadata)
   --disable_vfs         disable vfs tracer
   --disable_io          disable io tracer
@@ -51,7 +52,7 @@ options:
   --kubernetes__container KUBERNETES__CONTAINER
                         set kubernetes container to trace
   --kubernetes__namespace KUBERNETES__NAMESPACE
-                        set the kubernetes pod's namespace
+                        set the kubernetes pod's namespac
 ```
 
 ### Root Access

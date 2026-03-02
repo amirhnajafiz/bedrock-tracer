@@ -24,6 +24,7 @@ bt_scripts:
 	git clone --depth 1 --branch $(BEDROCK_BPFTRACE) \
 		https://github.com/amirhnajafiz/bedrock-bpftrace.git tmp
 	cp -r tmp/bpftrace ./bpftrace
+	cp tmp/tests/kernel_support.sh ./bpftrace
 	rm -rf tmp
 
 help:

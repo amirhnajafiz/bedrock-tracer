@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from typing import List, Optional
 
 import resolver
@@ -145,13 +146,13 @@ def _common_kwargs(args: argparse.Namespace) -> dict:
 def _build_cgroup_mode(args: argparse.Namespace, cgid: str) -> List[Tracer]:
     if args.procname:
         return _build_tracers(
-            script_group="bpftrace/cgroup_and_command",
+            script_group=os.path.join("bpftrace", "cgroup_and_command", args.version),
             args=[cgid, args.procname],
             **_common_kwargs(args),
         )
 
     return _build_tracers(
-        script_group="bpftrace/cgroup",
+        script_group=os.path.join("bpftrace", "cgroup", args.version),
         args=[cgid],
         **_common_kwargs(args),
     )
@@ -159,7 +160,7 @@ def _build_cgroup_mode(args: argparse.Namespace, cgid: str) -> List[Tracer]:
 
 def mode_execute(args: argparse.Namespace) -> List[Tracer]:
     return _build_tracers(
-        script_group="bpftrace/execute",
+        script_group=os.path.join("bpftrace", "execute", args.version),
         options=["-c", args.execute],
         **_common_kwargs(args),
     )
@@ -167,7 +168,7 @@ def mode_execute(args: argparse.Namespace) -> List[Tracer]:
 
 def mode_pid(args: argparse.Namespace) -> List[Tracer]:
     return _build_tracers(
-        script_group="bpftrace/pid",
+        script_group=os.path.join("bpftrace", "pid", args.version),
         args=[args.pid],
         **_common_kwargs(args),
     )
@@ -175,7 +176,7 @@ def mode_pid(args: argparse.Namespace) -> List[Tracer]:
 
 def mode_procname(args: argparse.Namespace) -> List[Tracer]:
     return _build_tracers(
-        script_group="bpftrace/command",
+        script_group=os.path.join("bpftrace", "command", args.version),
         args=[args.procname],
         **_common_kwargs(args),
     )

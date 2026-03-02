@@ -15,14 +15,22 @@ def ensure_kernel_support():
         If the kernel does not support eBPF or if the support check script is not found.
     """
 
-    script_path = "/usr/local/bedrock/kernel_support.sh"
+    possible_directories = ["/usr/local/bedrock", "bpftrace"]
+
+    script_path = None
+    for d in possible_directories:
+        script_path = os.path.join(d, "kernel_support.sh")
+        if os.path.exists(script_path):
+            break
 
     if not os.path.exists(script_path):
         raise RuntimeError(f"kernel support script '{script_path}' not found.")
 
     result = subprocess.run([script_path], capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"kernel support check failed: {result.stderr}")
+        output = result.stdout.strip()
+        error = result.stderr.strip()
+        raise RuntimeError(f"kernel support check failed: \n{output}\n{error}")
 
 
 def must_support_bpftrace():
