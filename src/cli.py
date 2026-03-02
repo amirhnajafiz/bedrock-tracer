@@ -6,6 +6,7 @@ from typing import Any, Callable, List
 
 import dispatch as dp
 import utils
+import utils.files
 from builder import build_parser
 from matchbox import extinguish_tracing, ignite_tracing
 from tracer import Tracer
