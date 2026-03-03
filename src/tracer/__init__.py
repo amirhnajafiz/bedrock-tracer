@@ -1,5 +1,6 @@
 import logging
 import os
+import select
 import subprocess
 import threading
 import time
@@ -67,12 +68,13 @@ class Tracer(ABC):
         self._t = threading.Thread(target=self.start_tracer, args=(), daemon=True)
         self._t.start()
 
+        logging.debug(f"[{self._tid}] tracer started in thread {self._t}.")
+
     def stop(self) -> None:
         """Stop the tracer by terminating its process and thread."""
 
-        self._stop_event.set()
-        if self._t:
-            self._t.join()
+        if self._stop_event:
+            self._stop_event.set()
 
     def wait(self) -> None:
         """Wait for the tracing process to finish."""
@@ -91,9 +93,10 @@ class Tracer(ABC):
 
         return self._tid
 
-    @classmethod
     def start_tracer(self):
-        pass
+        """Start the tracer in a new process and wait until its over or the stop event is received."""
+
+        raise NotImplementedError("start_tracer must be implemented by subclasses.")
 
 
 class MonoTracer(Tracer):
@@ -204,7 +207,7 @@ class RotateTracer(Tracer):
             proc = subprocess.Popen(
                 bt_cmd,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,  # line-buffered read
             )
@@ -221,22 +224,30 @@ class RotateTracer(Tracer):
                         logging.debug(f"[{self._tid}] killing tracer.")
                         proc.kill()
 
+                    # drain remaining output
+                    while True:
+                        rlist, _, _ = select.select([proc.stdout], [], [], 0)
+                        if not rlist:
+                            break
+                        line = proc.stdout.readline()
+                        if not line:
+                            break
+                        self.__write_line(line)
+
                     break
 
                 # non-blocking line read
-                line = proc.stdout.readline()
-
-                if not line:
-                    # process probably exited
+                rlist, _, _ = select.select([proc.stdout], [], [], 0.1)
+                if rlist:
+                    line = proc.stdout.readline()
+                    if line:
+                        self.__write_line(line)
+                    else:
+                        if proc.poll() is not None:
+                            break
+                else:
                     if proc.poll() is not None:
                         break
-
-                    time.sleep(0.05)
-
-                    continue
-
-                # write line safely with rotation
-                self.__write_line(line)
         except Exception as e:
             logging.error(f"[{self._tid}] tracer failed: {e}")
         finally:
