@@ -2,6 +2,15 @@ import argparse
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the argument parser.
+    
+    Returns
+    -------
+    parser : argparse.ArgumentParser
+        The built argument parser.
+    """
+
+    # build the argument parser
     parser = argparse.ArgumentParser(
         description="Bedrock is an ebpf-based file system tracing tool."
     )

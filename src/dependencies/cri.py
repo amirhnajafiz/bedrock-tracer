@@ -1,10 +1,16 @@
 import os
+import stat
+import socket
+
+
+DOCKER_SOCKET = "/var/run/docker.sock"
+KUBERNETES_SA_TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 
 def ensure_docker_env():
     """Check if the current environment is running in Docker.
 
-    It needs to have the Docker socket mounted at /var/run/docker.sock to confirm that it's running in Docker.
+    It checks for the presence of the Docker socket at /var/run/docker.sock to confirm that it's running in Docker.
 
     Raises
     ------
@@ -12,8 +18,21 @@ def ensure_docker_env():
         If the current environment is not running in Docker.
     """
 
-    if not os.path.exists("/run/docker.sock"):
+    # check if the Docker socket exists
+    if not os.path.exists(DOCKER_SOCKET):
         raise RuntimeError("Not running in Docker environment.")
+    
+    # check if the Docker socket is a socket file
+    if not stat.S_ISSOCK(os.stat(DOCKER_SOCKET).st_mode):
+        raise RuntimeError("Docker socket not found, is it mounted correctly?")
+    
+    # try to connect to the Docker socket to ensure it's working
+    try:
+        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        client.connect(DOCKER_SOCKET)
+        client.close()
+    except Exception as e:
+        raise RuntimeError("Failed to connect to Docker socket, is it working correctly?") from e
 
 
 def ensure_kubernetes_env():
@@ -29,7 +48,7 @@ def ensure_kubernetes_env():
         If the current environment is not running in Kubernetes or if CRI socket is not found when running in Kubernetes.
     """
 
-    if not os.path.exists("/var/run/secrets/kubernetes.io/serviceaccount/token"):
+    if not os.path.exists(KUBERNETES_SA_TOKEN_PATH):
         raise RuntimeError("Not running in Kubernetes environment.")
 
     # check if CONTAINER_RUNTIME_ENDPOINT environment variable is set
