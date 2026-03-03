@@ -29,7 +29,7 @@ bt_scripts:
 
 help:
 	@echo "\n\nsetup finished."
-	@echo "run: source $(VENV_DIR)/bin/active"
+	@echo "run: source $(VENV_DIR)/bin/activate"
 	@echo "run: bdtrace --help"
 	@echo ""
 
