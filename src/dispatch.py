@@ -5,6 +5,7 @@ from typing import List, Optional
 
 import resolver
 import utils
+import utils.size
 from tracer import MonoTracer, RotateTracer, Tracer
 from tracer.files import get_tracing_scripts
 
@@ -132,10 +133,12 @@ def _build_tracers(
 
 
 def _common_kwargs(args: argparse.Namespace) -> dict:
+    rs = utils.size.parse_size(args.rotate_size)
+
     return dict(
         output_dir=args.out,
         rotate=args.rotate,
-        rotate_size=args.rotate_size,
+        rotate_size=rs,
         disable_vfs=args.disable_vfs,
         disable_io=args.disable_io,
         disable_memory_map=args.disable_memory_map,

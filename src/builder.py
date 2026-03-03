@@ -7,6 +7,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # common flags
+    parser.add_argument("-d", "--debug", action="store_true", help="enable debug logs")
     parser.add_argument(
         "-o", "--out", default="logs", help="output directory (default ./logs)"
     )
@@ -15,14 +16,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--rotate_size",
-        type=int,
-        default=100 * 1024 * 1024,
-        help="log rotation size (default 100MB)",
+        default="100MB",
+        help="log rotation size (e.g. \"100MB\", \"10KB\", \"102400\") (default 100MB)",
     )
     parser.add_argument(
-        "--version",
-        default="v1",
-        help="bedrock-bpftrace scripts version (default v1, which reduces output log size but increases the risk of missing events.)",
+        "--filter", 
+        help="filter events by a bpftrace comm expression (e.g. 'comm == \"bash\"')",
     )
     parser.add_argument(
         "--headless",
@@ -38,7 +37,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--disable_memory_map", action="store_true", help="disable memory map tracer"
     )
-    parser.add_argument("-d", "--debug", action="store_true", help="enable debug logs")
+    parser.add_argument(
+        "--version",
+        default="v1",
+        help="bedrock-bpftrace scripts version (default v1, which reduces output log size but increases the risk of missing events.)",
+    )
 
     # mutually exclusive tracing modes
     group = parser.add_mutually_exclusive_group(required=True)
