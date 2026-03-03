@@ -68,7 +68,7 @@ class Tracer(ABC):
         self._t = threading.Thread(target=self.start_tracer, args=(), daemon=True)
         self._t.start()
 
-        logging.debug(f"[{self._tid}] tracer started in thread {self._t}.")
+        logging.debug(f"[{self._tid}] tracer started in thread {self._t.ident}.")
 
     def stop(self) -> None:
         """Stop the tracer by terminating its process and thread."""

@@ -30,7 +30,7 @@ def ignite_tracing(output_dir: str, tracers: List[Tracer]) -> None:
     for tracer in tracers:
         tracer.wait()
 
-    logging.info("passing all waits.")
+    logging.info("all tracers stopped naturally.")
 
 
 def extinguish_tracing(tracers: List[Tracer]) -> Callable:
@@ -57,6 +57,6 @@ def extinguish_tracing(tracers: List[Tracer]) -> Callable:
             logging.info(f"stopping {tracer.name()} ...")
             tracer.stop()
 
-        logging.info("all tracers stopped.")
+        logging.info("all tracers stopped gracefully.")
 
     return handle_shutdown
