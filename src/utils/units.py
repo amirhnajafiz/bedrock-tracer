@@ -2,8 +2,8 @@ import argparse
 import re
 
 
-def parse_size(value: str) -> int:
-    """Parse string representing a size into integer.
+def parse_bytes(value: str) -> int:
+    """Parse string representing a bytes size into integer.
 
     Parse a human-readable size string (e.g. "100MB", "10KB", "102400") into an integer number of bytes.
 

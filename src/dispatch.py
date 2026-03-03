@@ -3,12 +3,13 @@ import logging
 import os
 from typing import List, Optional
 
+import dependencies.command
+import dependencies.cri
+import dependencies.path
 import resolver
-import utils
-import utils.cri
-import utils.size
+import utils.units
 from tracer import MonoTracer, RotateTracer, Tracer
-from tracer.files import get_tracing_scripts
+from tracer.bpftrace import import_tracing_scripts
 
 
 def _new_tracer(
@@ -47,7 +48,7 @@ def _new_tracer(
     """
 
     logging.debug("searching for %s script.", path)
-    utils.ensure_script(path)
+    dependencies.path.ensure_script(path)
 
     if rotate:
         tracer = RotateTracer(name, path, output_dir)
@@ -109,7 +110,7 @@ def _build_tracers(
     tracers = []
 
     # get tracing scripts
-    scripts = get_tracing_scripts(
+    scripts = import_tracing_scripts(
         script_group,
         disable_vfs=disable_vfs,
         disable_io=disable_io,
@@ -117,6 +118,7 @@ def _build_tracers(
         headless=headless,
     )
 
+    # build tracers
     for tname, tpath in scripts.items():
         logging.debug("building tracer for %s : %s", tname, tpath)
 
@@ -134,7 +136,24 @@ def _build_tracers(
 
 
 def _common_kwargs(args: argparse.Namespace) -> dict:
-    rs = utils.size.parse_size(args.rotate_size)
+    """Common keyword arguments for tracer builders.
+
+    Parse and return common keyword arguments for tracer builders.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+
+    Returns
+    -------
+    kwargs : dict
+        Common keyword arguments for tracer builders.
+
+    """
+
+    # parse rotation size
+    rs = utils.units.parse_bytes(args.rotate_size)
 
     return dict(
         output_dir=args.out,
@@ -148,6 +167,23 @@ def _common_kwargs(args: argparse.Namespace) -> dict:
 
 
 def _build_cgroup_mode(args: argparse.Namespace, cgid: str) -> List[Tracer]:
+    """Build and return tracers for cgroup mode.
+
+    Parse the input arguments, build, and return tracer instances for cgroup mode.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+    cgid : str
+        Cgroup ID.
+
+    Returns
+    -------
+    tracers : List[Tracer]
+        A list of tracer instances for cgroup mode.
+    """
+
     if args.filter:
         return _build_tracers(
             script_group=os.path.join("bpftrace", "cgroup_and_command", args.version),
@@ -163,6 +199,21 @@ def _build_cgroup_mode(args: argparse.Namespace, cgid: str) -> List[Tracer]:
 
 
 def mode_execute(args: argparse.Namespace) -> List[Tracer]:
+    """Build and return tracers for execute mode.
+
+    Parse the input arguments, build, and return tracer instances for execute mode.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+
+    Returns
+    -------
+    tracers : List[Tracer]
+        A list of tracer instances for execute mode.
+    """
+
     return _build_tracers(
         script_group=os.path.join("bpftrace", "execute", args.version),
         options=["-c", args.execute],
@@ -171,6 +222,21 @@ def mode_execute(args: argparse.Namespace) -> List[Tracer]:
 
 
 def mode_pid(args: argparse.Namespace) -> List[Tracer]:
+    """Build and return tracers for PID mode.
+
+    Parse the input arguments, build, and return tracer instances for PID mode.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+
+    Returns
+    -------
+    tracers : List[Tracer]
+        A list of tracer instances for PID mode.
+    """
+
     return _build_tracers(
         script_group=os.path.join("bpftrace", "pid", args.version),
         args=[args.pid],
@@ -179,6 +245,21 @@ def mode_pid(args: argparse.Namespace) -> List[Tracer]:
 
 
 def mode_procname(args: argparse.Namespace) -> List[Tracer]:
+    """Build and return tracers for process name mode.
+
+    Parse the input arguments, build, and return tracer instances for process name mode.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+
+    Returns
+    -------
+    tracers : List[Tracer]
+        A list of tracer instances for process name mode.
+    """
+
     return _build_tracers(
         script_group=os.path.join("bpftrace", "command", args.version),
         args=[args.procname],
@@ -187,18 +268,67 @@ def mode_procname(args: argparse.Namespace) -> List[Tracer]:
 
 
 def mode_cgroup(args: argparse.Namespace) -> List[Tracer]:
+    """Build and return tracers for cgroup mode.
+
+    Parse the input arguments, build, and return tracer instances for cgroup mode.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+
+    Returns
+    -------
+    tracers : List[Tracer]
+        A list of tracer instances for cgroup mode.
+    """
+
     return _build_cgroup_mode(args, args.cgroup)
 
 
 def mode_docker(args: argparse.Namespace) -> List[Tracer]:
-    utils.cri.ensure_docker()
+    """Build and return tracers for Docker mode.
+
+    Parse the input arguments, build, and return tracer instances for Docker mode.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+
+    Returns
+    -------
+    tracers : List[Tracer]
+        A list of tracer instances for Docker mode.
+    """
+
+    # ensure Docker is available
+    dependencies.command.must_support_docker()
+    dependencies.cri.ensure_docker_env()
 
     cgroup = resolver.resolve_docker_container(container_name=args.container)
     return _build_cgroup_mode(args, cgroup)
 
 
 def mode_k8s(args: argparse.Namespace) -> List[Tracer]:
-    utils.cri.ensure_kubernetes()
+    """Build and return tracers for Kubernetes mode.
+
+    Parse the input arguments, build, and return tracer instances for Kubernetes mode.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The input arguments.
+
+    Returns
+    -------
+    tracers : List[Tracer]
+        A list of tracer instances for Kubernetes mode.
+    """
+
+    # ensure Kubernetes is available
+    dependencies.command.must_support_crictl()
+    dependencies.cri.ensure_kubernetes_env()
 
     cgroup = resolver.resolve_k8s_pod(
         pod=args.kubernetes__pod,

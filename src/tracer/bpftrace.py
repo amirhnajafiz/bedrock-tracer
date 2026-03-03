@@ -2,7 +2,7 @@ import os
 from typing import Dict
 
 
-def get_tracing_scripts(
+def import_tracing_scripts(
     dir_path: str,
     disable_vfs: bool = False,
     disable_io: bool = False,

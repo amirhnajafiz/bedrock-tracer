@@ -1,7 +1,7 @@
 import os
 
 
-def ensure_docker():
+def ensure_docker_env():
     """Check if the current environment is running in Docker.
 
     It needs to have the Docker socket mounted at /var/run/docker.sock to confirm that it's running in Docker.
@@ -16,7 +16,7 @@ def ensure_docker():
         raise RuntimeError("Not running in Docker environment.")
 
 
-def ensure_kubernetes():
+def ensure_kubernetes_env():
     """Check if the current environment is running in Kubernetes.
 
     It needs to have the Kubernetes service account token file at /var/run/secrets/kubernetes.io/serviceaccount/token to confirm that it's running in Kubernetes.
