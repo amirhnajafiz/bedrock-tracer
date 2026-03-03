@@ -147,10 +147,10 @@ def _common_kwargs(args: argparse.Namespace) -> dict:
 
 
 def _build_cgroup_mode(args: argparse.Namespace, cgid: str) -> List[Tracer]:
-    if args.procname:
+    if args.filter:
         return _build_tracers(
             script_group=os.path.join("bpftrace", "cgroup_and_command", args.version),
-            args=[cgid, args.procname],
+            args=[cgid, args.filter],
             **_common_kwargs(args),
         )
 

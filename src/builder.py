@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--filter", 
-        help="filter events by a bpftrace comm expression (e.g. 'comm == \"bash\"')",
+        help="filter events by a bpftrace comm expression (e.g. 'comm == \"bash\"'). Only works in cgroup based tracing modes (cgroup, container, kubernetes).",
     )
     parser.add_argument(
         "--headless",
