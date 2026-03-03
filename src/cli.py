@@ -51,6 +51,7 @@ def run_tracers(args: argparse.Namespace, tracers: List[Tracer]) -> None:
     )
 
     ignite_tracing(output_dir=args.out, tracers=tracers)
+    logging.debug("finish running tracers.")
 
 
 def resolve_mode(args: argparse.Namespace) -> Callable[[Any], List[Tracer]]:
@@ -91,10 +92,14 @@ def start(args: argparse.Namespace) -> None:
         Python argparser object that stores user input flags.
     """
 
+    logging.info("starting cli ...")
+
     handler = resolve_mode(args)
     tracers = handler(args)
 
     run_tracers(args, tracers)
+
+    logging.info("program returning with exit code 0.")
 
 
 def init_vars(args: argparse.Namespace) -> None:
@@ -139,8 +144,10 @@ def main():
     logging.info(f"configs:\n\t{vars(args)}")
     utils.files.write_reader_configs(args.out, vars(args))
 
+    # start the cli
     try:
         start(args)
+        sys.exit(0)
     except Exception as e:
         logging.exception(e)
         sys.exit(1)

@@ -138,7 +138,7 @@ class MonoTracer(Tracer):
         except Exception as e:
             logging.error(f"[{self._tid}] failed: {e}")
         finally:
-            logging.debug(f"[{self._tid}]  exiting tracer")
+            logging.debug(f"[{self._tid}] exiting tracer")
 
 
 class RotateTracer(Tracer):
@@ -173,7 +173,7 @@ class RotateTracer(Tracer):
 
         logging.info(f"[{self._tid}] rotating to {filename}.")
 
-        self._f = open(filename, "w", buffering=1)  # line-buffered
+        self._f = open(filename, "w")
         self._current_size = 0
         self._file_index += 1
 
@@ -189,6 +189,8 @@ class RotateTracer(Tracer):
         data = line.encode()
         if self._current_size + len(data) > self._rotate_size:
             self.__open_new_file()
+
+        logging.debug(f"[{self._tid}] writing line of size {len(data)} bytes.")
 
         self._f.write(line)
         self._current_size += len(data)
@@ -209,7 +211,6 @@ class RotateTracer(Tracer):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                bufsize=1,  # line-buffered read
             )
 
             # read until process ends or stop requested
@@ -229,9 +230,11 @@ class RotateTracer(Tracer):
                         rlist, _, _ = select.select([proc.stdout], [], [], 0)
                         if not rlist:
                             break
+
                         line = proc.stdout.readline()
                         if not line:
                             break
+
                         self.__write_line(line)
 
                     break
