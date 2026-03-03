@@ -7,6 +7,7 @@ from typing import Any, Callable, List
 import dispatch as dp
 import utils
 import utils.files
+import utils.mounts
 from builder import build_parser
 from matchbox import extinguish_tracing, ignite_tracing
 from tracer import Tracer
@@ -126,6 +127,7 @@ def main():
     try:
         utils.ensure_kernel_support()
         utils.must_support_bpftrace()
+        utils.mounts.ensure_volumes()
     except Exception as e:
         logging.exception(e)
         sys.exit(1)

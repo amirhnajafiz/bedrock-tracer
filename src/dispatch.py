@@ -5,6 +5,7 @@ from typing import List, Optional
 
 import resolver
 import utils
+import utils.cri
 import utils.size
 from tracer import MonoTracer, RotateTracer, Tracer
 from tracer.files import get_tracing_scripts
@@ -190,11 +191,15 @@ def mode_cgroup(args: argparse.Namespace) -> List[Tracer]:
 
 
 def mode_docker(args: argparse.Namespace) -> List[Tracer]:
+    utils.cri.ensure_docker()
+
     cgroup = resolver.resolve_docker_container(container_name=args.container)
     return _build_cgroup_mode(args, cgroup)
 
 
 def mode_k8s(args: argparse.Namespace) -> List[Tracer]:
+    utils.cri.ensure_kubernetes()
+
     cgroup = resolver.resolve_k8s_pod(
         pod=args.kubernetes__pod,
         namespace=args.kubernetes__namespace,
