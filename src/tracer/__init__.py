@@ -208,7 +208,7 @@ class RotateTracer(Tracer):
 
         try:
             proc = subprocess.Popen(
-                bt_cmd,
+                ["stdbuf", "-oL", "-eL"] + bt_cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
