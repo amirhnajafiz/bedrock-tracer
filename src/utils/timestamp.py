@@ -23,7 +23,7 @@ def export_reference_timestamps(output_dir: str):
     except Exception:
         ref_mono = None
 
-    logging.info(
+    logging.debug(
         f"using parameters for timestamp converts:\n\tref wall: {ref_wall}\n\tref mono: {ref_mono}"
     )
 
@@ -32,4 +32,4 @@ def export_reference_timestamps(output_dir: str):
     with open(meta_file, "w") as mf:
         json.dump({"ref_wall": ref_wall, "ref_mono": ref_mono}, mf, indent=2)
 
-    logging.info("reference timestamps saved to: %s", meta_file)
+    logging.debug("reference timestamps saved to: %s", meta_file)

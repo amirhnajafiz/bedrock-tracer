@@ -3,17 +3,49 @@ import datetime
 import logging
 import os
 import signal
-import sys
+from typing import Callable, List
 
 import dependencies.command
 import dependencies.kernel
 import utils.files
 from builder import build_parser
-from matchbox import extinguish_tracing, ignite_tracing
 from resolver import resolve_mode
+from tracer import Tracer
+from utils.timestamp import export_reference_timestamps
 
 
-def start(args: argparse.Namespace) -> None:
+def _shutdown_wrapper(tracers: List[Tracer]) -> Callable:
+    """Shutdown wrapper.
+
+    Returns a function that can be used as a signal handler to stop the tracers gracefully.
+
+    Parameters
+    ----------
+    tracers : List[Tracer]
+        List of running tracers.
+
+    Returns
+    -------
+    handle_shutdown : Callable
+        The termination function.
+    """
+
+    # return a handle_shutdown function to bind it to termination signals
+    def handle_shutdown(signum, _):
+        if signum is not None:
+            logging.info(f"received signal {signum}, shutting down safely ...")
+
+        # loop over tracers and stop them
+        for tracer in tracers:
+            logging.info(f"stopping {tracer.name()} ...")
+            tracer.stop()
+
+        logging.info("all tracers stopped gracefully.")
+
+    return handle_shutdown
+
+
+def _start(args: argparse.Namespace) -> None:
     """Start cli.
 
     Parameters
@@ -22,7 +54,7 @@ def start(args: argparse.Namespace) -> None:
         Python argparser object that stores user input flags.
     """
 
-    logging.info("starting cli.")
+    logging.info("cli started.")
 
     # get the handler for the selected tracing mode and run the tracers
     handler = resolve_mode(args)
@@ -32,9 +64,9 @@ def start(args: argparse.Namespace) -> None:
 
     logging.debug("prepare to run %d tracers.", len(tracers))
 
-    # bind the termination signals to the extinguish_tracing handler with the tracers to stop
-    signal.signal(signal.SIGINT, extinguish_tracing(tracers=tracers))
-    signal.signal(signal.SIGTERM, extinguish_tracing(tracers=tracers))
+    # bind the termination signals to the stop handler with the tracers to stop
+    signal.signal(signal.SIGINT, _shutdown_wrapper(tracers=tracers))
+    signal.signal(signal.SIGTERM, _shutdown_wrapper(tracers=tracers))
 
     logging.debug(
         "termination signal handlers are bounded for %s and %s.",
@@ -42,10 +74,21 @@ def start(args: argparse.Namespace) -> None:
         signal.SIGTERM,
     )
 
-    # run the tracers
-    ignite_tracing(output_dir=args.out, tracers=tracers)
+    # store the reference timestamps to convert raw clock numbers to datetime
+    export_reference_timestamps(args.out)
 
-    logging.info("cli returning with exit code 0.")
+    # loop over tracers and start
+    for tracer in tracers:
+        logging.info(f"starting {tracer.name()} ...")
+        tracer.start()
+
+    logging.info("all tracers started.")
+
+    # wait for all tracers
+    for tracer in tracers:
+        tracer.wait()
+
+    logging.info("cli finished.")
 
 
 def init_vars(args: argparse.Namespace) -> None:
@@ -73,32 +116,35 @@ def init_vars(args: argparse.Namespace) -> None:
     logging.debug("output directory %s initialized.", args.out)
 
 
-def main():
+def main() -> int:
     # build a parser to get input arguments
     parser = build_parser()
     args = parser.parse_args()
 
-    # check system requirements
     try:
+        # check system requirements
         dependencies.kernel.ensure_kernel_support()
         dependencies.kernel.ensure_directories()
         dependencies.command.must_support_bpftrace()
+
+        # initialize variables
+        init_vars(args)
+
+        # export the configurations
+        logging.info(f"configs:\n\t{vars(args)}")
+        utils.files.write_reader_configs(args.out, vars(args))
+
+        # start the cli
+        _start(args)
+
     except Exception as e:
         logging.exception(e)
-        sys.exit(1)
+        return 1
 
-    # initialize variables
-    init_vars(args)
+    finally:
+        logging.info("exiting.")
+        return 0
 
-    # export the configurations
-    logging.info(f"configs:\n\t{vars(args)}")
-    utils.files.write_reader_configs(args.out, vars(args))
 
-    # start the cli
-    try:
-        start(args)
-    except Exception as e:
-        logging.exception(e)
-        sys.exit(1)
-
-    sys.exit(0)
+if __name__ == "__main__":
+    raise SystemExit(main())
