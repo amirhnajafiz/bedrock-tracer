@@ -190,10 +190,7 @@ class RotateTracer(Tracer):
         if self._current_size + len(data) > self._rotate_size:
             self.__open_new_file()
 
-        self._f.write(line)
-        self._f.flush()
-        os.fsync(self._f.fileno())
-        
+        self._f.write(line)        
         self._current_size += len(data)
 
     def start_tracer(self) -> None:
