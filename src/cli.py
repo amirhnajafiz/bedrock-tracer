@@ -91,7 +91,8 @@ def main():
     # start the cli
     try:
         start(args)
-        sys.exit(0)
     except Exception as e:
         logging.exception(e)
         sys.exit(1)
+
+    sys.exit(0)
