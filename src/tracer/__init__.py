@@ -169,7 +169,7 @@ class RotateTracer(Tracer):
 
         logging.info(f"[{self._tid}] rotating to {filename}.")
 
-        self._f = open(filename, "w")
+        self._f = open(filename, "w", buffering=1)
         self._current_size = 0
         self._file_index += 1
 
@@ -205,6 +205,7 @@ class RotateTracer(Tracer):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
+                bufsize=1,
             )
 
             # read until process ends or stop requested
