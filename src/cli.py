@@ -1,5 +1,7 @@
 import argparse
+import datetime
 import logging
+import os
 import signal
 import sys
 
@@ -20,7 +22,7 @@ def start(args: argparse.Namespace) -> None:
         Python argparser object that stores user input flags.
     """
 
-    logging.info("starting cli ...")
+    logging.info("starting cli.")
 
     # get the handler for the selected tracing mode and run the tracers
     handler = resolve_mode(args)
@@ -61,6 +63,10 @@ def init_vars(args: argparse.Namespace) -> None:
         level=logging.DEBUG if args.debug else logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s: %(message)s",
     )
+
+    # reset the args.out by adding the timestamp to the path
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    args.out = os.path.join(args.out, timestamp)
 
     # create the output directory
     utils.files.create_dir(args.out)
