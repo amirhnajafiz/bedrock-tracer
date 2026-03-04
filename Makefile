@@ -5,7 +5,7 @@ VENV_PIP := $(VENV_DIR)/bin/pip
 
 BEDROCK_BPFTRACE ?= v0.0.2-stable
 
-.PHONY: all venv pip_install bt_scripts help cleanup
+.PHONY: all venv pip_install bt_scripts help cleanup test_shutdown
 
 all: venv pip_install bt_scripts help
 
@@ -35,3 +35,6 @@ help:
 
 cleanup:
 	rm -rf bpftrace
+
+test_shutdown:
+	sh tests/shutdown_integration_test.sh
