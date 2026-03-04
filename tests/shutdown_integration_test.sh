@@ -14,6 +14,7 @@ cleanup() {
     rm -rf "${OUT_DIR}" 2>/dev/null || true
 }
 
+# ensure cleanup on script exit or interruption
 trap cleanup EXIT INT TERM
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -22,7 +23,8 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-if ! command -v bdtrace >/dev/null 2>&1; then
+BDTRACE=$(which bdtrace 2>/dev/null || true)
+if [ -z "${BDTRACE}" ]; then
     echo "[FAIL] bdtrace command not found in PATH."
     exit 1
 fi
@@ -47,7 +49,7 @@ find_matching_bpftrace_pids() {
 baseline_pids="$(find_matching_bpftrace_pids | tr '\n' ' ')"
 
 echo "[INFO] starting bdtrace in background ..."
-bdtrace --execute "sleep 120" --out "${OUT_DIR}" --debug >/tmp/bdtrace-shutdown-it.log 2>&1 &
+"${BDTRACE}" --execute "sleep 120" --out "${OUT_DIR}" --debug >/tmp/bdtrace-shutdown-it.log 2>&1 &
 RUNNER_PID="$!"
 
 sleep 3
