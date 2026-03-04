@@ -115,7 +115,7 @@ class Tracer(ABC):
         except subprocess.TimeoutExpired:
             logging.error(f"[{self._tid}][ERROR] failed to kill tracer process group.")
 
-    def wait(self, timeout: float | None = None) -> None:
+    def wait(self, timeout: float = 0.2) -> None:
         """Wait for the tracing process to finish.
 
         Parameters

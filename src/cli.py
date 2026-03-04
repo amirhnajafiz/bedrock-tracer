@@ -13,18 +13,18 @@ import dependencies.kernel
 import utils.files
 from builder import build_parser
 from resolver import resolve_mode
-from tracer import Tracer
+from tracer.tracer import Tracer
 from utils.timestamp import export_reference_timestamps
 
 
 def _find_bpftrace_processes_for_scripts(scripts: List[str]) -> List[tuple[int, str]]:
     """Find running bpftrace processes matching the tracer scripts.
-    
+
     Parameters
     ----------
     scripts : List[str]
         List of bpftrace script paths to match.
-    
+
     Returns
     -------
     processes : List[tuple[int, str]]
@@ -74,7 +74,7 @@ def _find_bpftrace_processes_for_scripts(scripts: List[str]) -> List[tuple[int, 
 
 def _force_cleanup_bpftrace(tracers: List[Tracer]) -> None:
     """Force cleanup any residual bpftrace process that belongs to current tracers.
-    
+
     Parameters
     ----------
     tracers : List[Tracer]
@@ -106,7 +106,9 @@ def _force_cleanup_bpftrace(tracers: List[Tracer]) -> None:
             continue
 
 
-def _shutdown_wrapper(tracers: List[Tracer], shutdown_event: threading.Event) -> Callable:
+def _shutdown_wrapper(
+    tracers: List[Tracer], shutdown_event: threading.Event
+) -> Callable:
     """Shutdown wrapper.
 
     Returns a function that can be used as a signal handler to stop the tracers gracefully.
