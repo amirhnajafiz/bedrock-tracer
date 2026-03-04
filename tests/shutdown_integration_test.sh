@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-set -eu
-
 ROOT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 OUT_DIR="${TMPDIR:-/tmp}/bdtrace-shutdown-it-$$"
 RUNNER_PID=""
