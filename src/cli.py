@@ -2,85 +2,13 @@ import argparse
 import logging
 import signal
 import sys
-from typing import Any, Callable, List
 
 import dependencies.command
 import dependencies.kernel
-import dispatch as dp
 import utils.files
 from builder import build_parser
 from matchbox import extinguish_tracing, ignite_tracing
-from tracer import Tracer
-
-# MODE Dispatch maps the cli flags to Python Callables.
-# Callables are a part of dispatch.py module. They have `mode_*` prefix
-# and accept the argparser parameters to run a Callable based on user input.
-_MODE_DISPATCH = {
-    "execute": dp.mode_execute,
-    "pid": dp.mode_pid,
-    "cgroup": dp.mode_cgroup,
-    "procname": dp.mode_procname,
-    "container": dp.mode_docker,
-    "kubernetes__pod": dp.mode_k8s,
-}
-
-
-def run_tracers(args: argparse.Namespace, tracers: List[Tracer]) -> None:
-    """Take a list of tracers and start them.
-
-    Run tracers accept a list of tracers type and sets termination handlers before
-    passing the tracers to matchbox module.
-
-    Parameters
-    ----------
-    args : argparser.Namespace
-        Python argparser object that stores user input flags.
-    tracers : List[Tracer]
-        List of tracers that is returned by handler.
-    """
-
-    logging.debug("prepare to run %d tracers.", len(tracers))
-
-    signal.signal(signal.SIGINT, extinguish_tracing(tracers=tracers))
-    signal.signal(signal.SIGTERM, extinguish_tracing(tracers=tracers))
-
-    logging.debug(
-        "termination signal handlers are bounded for %s and %s.",
-        signal.SIGINT,
-        signal.SIGTERM,
-    )
-
-    ignite_tracing(output_dir=args.out, tracers=tracers)
-    logging.debug("finish running tracers.")
-
-
-def resolve_mode(args: argparse.Namespace) -> Callable[[Any], List[Tracer]]:
-    """Resolve tracer mode.
-
-    Resolve tracing mode using the user input flags and MODE_DISPATCH.
-
-    Parameters
-    ----------
-    args : argparser.Namespace
-        Python argparser object that stores user input flags.
-
-    Returns
-    -------
-    handler : Callable
-        A handler that returns a list of tracers to pass to run_tracers function.
-
-    Raises
-    ------
-    RuntimeError
-        If none of the required flags are set.
-    """
-
-    for key, handler in _MODE_DISPATCH.items():
-        if getattr(args, key):
-            logging.debug("selected %s handler.", key)
-
-            return handler
-    raise RuntimeError("no tracing mode selected!")
+from resolver import resolve_mode
 
 
 def start(args: argparse.Namespace) -> None:
@@ -94,12 +22,28 @@ def start(args: argparse.Namespace) -> None:
 
     logging.info("starting cli ...")
 
+    # get the handler for the selected tracing mode and run the tracers
     handler = resolve_mode(args)
+
+    # get the tracers to run
     tracers = handler(args)
 
-    run_tracers(args, tracers)
+    logging.debug("prepare to run %d tracers.", len(tracers))
 
-    logging.info("program returning with exit code 0.")
+    # bind the termination signals to the extinguish_tracing handler with the tracers to stop
+    signal.signal(signal.SIGINT, extinguish_tracing(tracers=tracers))
+    signal.signal(signal.SIGTERM, extinguish_tracing(tracers=tracers))
+
+    logging.debug(
+        "termination signal handlers are bounded for %s and %s.",
+        signal.SIGINT,
+        signal.SIGTERM,
+    )
+
+    # run the tracers
+    ignite_tracing(output_dir=args.out, tracers=tracers)
+
+    logging.info("cli returning with exit code 0.")
 
 
 def init_vars(args: argparse.Namespace) -> None:

@@ -8,6 +8,9 @@ import dependencies.cri
 import dependencies.path
 import resolver
 import utils.units
+from containers import cgroup_id_from_container_id, cgroup_id_from_pid
+from containers.docker import container_pid
+from containers.kubernetes import container_uid
 from tracer import MonoTracer, RotateTracer, Tracer
 from tracer.bpftrace import import_tracing_scripts
 
@@ -306,6 +309,17 @@ def mode_docker(args: argparse.Namespace) -> List[Tracer]:
     dependencies.command.must_support_docker()
     dependencies.cri.ensure_docker_env()
 
+    # extract container arguments
+    container_name = args.container
+
+    # resolve container pid
+    pid = container_pid(container_name)
+    logging.debug("container %s has pid %s.", container_name, pid)
+
+    # resolve cgroup from pid
+    cgroup = cgroup_id_from_pid(pid)
+    logging.debug("container %s has cgroup %s.", container_name, cgroup)
+
     cgroup = resolver.resolve_docker_container(container_name=args.container)
     return _build_cgroup_mode(args, cgroup)
 
@@ -330,9 +344,21 @@ def mode_k8s(args: argparse.Namespace) -> List[Tracer]:
     dependencies.command.must_support_crictl()
     dependencies.cri.ensure_kubernetes_env()
 
-    cgroup = resolver.resolve_k8s_pod(
-        pod=args.kubernetes__pod,
-        namespace=args.kubernetes__namespace,
-        container_name=args.kubernetes__container,
+    # extract kubernetes arguments
+    namespace = args.kubernetes__namespace
+    pod = args.kubernetes__pod
+    container_name = args.kubernetes__container
+
+    # resolve container uid
+    container_id = container_uid(
+        namespace=namespace,
+        pod=pod,
+        container_name=container_name,
     )
+    logging.debug("container %s has uuid %s.", args.kubernetes__container, container_id)
+
+    # resolve cgroup from container uid
+    cgroup = cgroup_id_from_container_id(container_id)
+    logging.debug("container %s has cgroup %s.", args.kubernetes__container, cgroup)
+
     return _build_cgroup_mode(args, cgroup)

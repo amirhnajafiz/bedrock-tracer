@@ -1,63 +1,47 @@
+import argparse
 import logging
+from typing import Any, Callable, List
 
-from containers import cgroup_id_from_container_id, cgroup_id_from_pid
-from containers.docker import container_pid
-from containers.kubernetes import container_uid
+import dispatch as dp
+from tracer import Tracer
 
-
-def resolve_docker_container(container_name: str) -> str:
-    """Resolve cgroup id of a docker container pod.
-
-    Parameters
-    ----------
-    container_name : str
-        Container name or uuid.
-
-    Returns
-    -------
-    cgroup : str
-        Container cgroup id.
-    """
-
-    pid = container_pid(container_name)
-
-    logging.debug("container %s has pid %s.", container_name, pid)
-
-    cgroup = cgroup_id_from_pid(pid)
-
-    logging.debug("container %s has cgroup %s.", container_name, cgroup)
-
-    return cgroup
+# MODE Dispatch maps the cli flags to Python Callables.
+# Callables are a part of dispatch.py module. They have `mode_*` prefix
+# and accept the argparser parameters to run a Callable based on user input.
+_MODE_DISPATCH = {
+    "execute": dp.mode_execute,
+    "pid": dp.mode_pid,
+    "cgroup": dp.mode_cgroup,
+    "procname": dp.mode_procname,
+    "container": dp.mode_docker,
+    "kubernetes__pod": dp.mode_k8s,
+}
 
 
-def resolve_k8s_pod(namespace: str, pod: str, container_name: str) -> str:
-    """Resolve cgroup id of a Kubernetes pod.
+def resolve_mode(args: argparse.Namespace) -> Callable[[Any], List[Tracer]]:
+    """Resolve tracer mode.
+
+    Resolve tracing mode using the user input flags and MODE_DISPATCH.
 
     Parameters
     ----------
-    namespace : str
-        Pod namespace name.
-    pod : str
-        Pod name.
-    container_name : str
-        Container name of the pod.
+    args : argparser.Namespace
+        Python argparser object that stores user input flags.
 
     Returns
     -------
-    cgroup : str
-        Container cgroup id.
+    handler : Callable
+        A handler that returns a list of tracers to pass to run_tracers function.
+
+    Raises
+    ------
+    RuntimeError
+        If none of the required flags are set.
     """
 
-    container_id = container_uid(
-        namespace=namespace,
-        pod=pod,
-        container_name=container_name,
-    )
+    for key, handler in _MODE_DISPATCH.items():
+        if getattr(args, key):
+            logging.debug("selected %s handler.", key)
 
-    logging.debug("container %s has uuid %s.", container_name, container_id)
-
-    cgroup = cgroup_id_from_container_id(container_id)
-
-    logging.debug("container %s has cgroup %s.", container_name, cgroup)
-
-    return cgroup
+            return handler
+    raise RuntimeError("no tracing mode selected!")
