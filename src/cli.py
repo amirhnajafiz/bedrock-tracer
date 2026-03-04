@@ -17,6 +17,29 @@ from tracer.tracer import Tracer
 from utils.timestamp import export_reference_timestamps
 
 
+def _reap_children() -> None:
+    """Reap exited child processes to avoid zombies."""
+
+    while True:
+        try:
+            pid, status = os.waitpid(-1, os.WNOHANG)
+        except ChildProcessError:
+            return
+        except InterruptedError:
+            continue
+
+        if pid == 0:
+            return
+
+        logging.debug("reaped child process pid=%d status=%d", pid, status)
+
+
+def _sigchld_handler(_signum, _frame) -> None:
+    """SIGCHLD handler that reaps completed child processes."""
+
+    _reap_children()
+
+
 def _find_bpftrace_processes_for_scripts(scripts: List[str]) -> List[tuple[int, str]]:
     """Find running bpftrace processes matching the tracer scripts.
 
@@ -171,6 +194,8 @@ def _start(args: argparse.Namespace) -> None:
         _shutdown_wrapper(tracers=tracers, shutdown_event=shutdown_event),
     )
 
+    signal.signal(signal.SIGCHLD, _sigchld_handler)
+
     logging.debug(
         "termination signal handlers are bounded for %s and %s.",
         signal.SIGINT,
@@ -216,8 +241,11 @@ def _start(args: argparse.Namespace) -> None:
                 )
             break
 
+        _reap_children()
+
     # force cleanup any residual bpftrace processes that belongs to current tracers
     _force_cleanup_bpftrace(tracers)
+    _reap_children()
 
     logging.info("cli finished.")
 

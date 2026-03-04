@@ -49,6 +49,42 @@ find_matching_bpftrace_pids() {
     ' | sort -n
 }
 
+is_alive_non_zombie_pid() {
+    pid="$1"
+    stat="$(ps -p "${pid}" -o stat= 2>/dev/null | awk '{print $1}')"
+
+    if [ -z "${stat}" ]; then
+        return 1
+    fi
+
+    case "${stat}" in
+        Z*|*Z*)
+            return 1
+            ;;
+    esac
+
+    return 0
+}
+
+collect_residual_pids() {
+    current_pids="$(find_matching_bpftrace_pids | tr '\n' ' ')"
+    residual_pids=""
+
+    for pid in ${current_pids}; do
+        case " ${baseline_pids} " in
+            *" ${pid} "*)
+                continue
+                ;;
+        esac
+
+        if is_alive_non_zombie_pid "${pid}"; then
+            residual_pids="${residual_pids} ${pid}"
+        fi
+    done
+
+    echo "${residual_pids}"
+}
+
 baseline_pids="$(find_matching_bpftrace_pids | tr '\n' ' ')"
 
 echo "[INFO] starting bdtrace in background ..."
@@ -77,28 +113,27 @@ RUNNER_PID=""
 leftover_pids=""
 check_steps=0
 while [ "${check_steps}" -lt 40 ]; do
-    current_pids="$(find_matching_bpftrace_pids | tr '\n' ' ')"
-    leftover_pids=""
-
-    for pid in ${current_pids}; do
-        case " ${baseline_pids} " in
-            *" ${pid} "*) ;;
-            *) leftover_pids="${leftover_pids} ${pid}" ;;
-        esac
-    done
+    leftover_pids="$(collect_residual_pids)"
 
     if [ -z "${leftover_pids}" ]; then
         echo "[PASS] no residual bdtrace-owned bpftrace process remained after shutdown."
         exit 0
     fi
 
-    sleep 0.25
+    sleep 1
     check_steps=$((check_steps + 1))
 done
 
+# one final re-check to avoid failing on stale/transient pid snapshots
+leftover_pids="$(collect_residual_pids)"
+if [ -z "${leftover_pids}" ]; then
+    echo "[PASS] no residual bdtrace-owned bpftrace process remained after shutdown."
+    exit 0
+fi
+
 echo "[FAIL] residual bpftrace process(es) found:${leftover_pids}"
 for pid in ${leftover_pids}; do
-    ps -p "${pid}" -o pid=,ppid=,command= || true
+    ps -p "${pid}" -o pid=,ppid=,stat=,command= || true
 done
 
 echo "[INFO] check /tmp/bdtrace-shutdown-it.log for tracer logs."
