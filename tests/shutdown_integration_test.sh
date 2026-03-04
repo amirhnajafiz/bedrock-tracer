@@ -21,9 +21,14 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-BDTRACE=$(which bdtrace 2>/dev/null || true)
-if [ -z "${BDTRACE}" ]; then
-    echo "[FAIL] bdtrace command not found in PATH."
+BDTRACE="${ROOT_DIR}/.venv/bin/bdtrace"
+if [ ! -x "${BDTRACE}" ]; then
+    BDTRACE="$(command -v bdtrace 2>/dev/null || true)"
+fi
+
+if [ -z "${BDTRACE}" ] || [ ! -x "${BDTRACE}" ]; then
+    echo "[FAIL] bdtrace command not found."
+    echo "Expected either: ${ROOT_DIR}/.venv/bin/bdtrace or bdtrace in PATH."
     exit 1
 fi
 
