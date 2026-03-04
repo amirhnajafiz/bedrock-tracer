@@ -7,6 +7,7 @@ import dependencies.command
 import dependencies.cri
 import dependencies.path
 import resolver
+import utils.files
 import utils.units
 from containers import cgroup_id_from_container_id, cgroup_id_from_pid
 from containers.docker import container_pid
@@ -51,15 +52,24 @@ def _new_tracer(
     """
 
     logging.debug("searching for %s script.", path)
+
+    # ensure the bpftrace script path exists
     dependencies.path.ensure_script(path)
 
+    # create tracer output directory
+    tracer_output_dir = os.path.join(output_dir, name)
+    utils.files.create_dir(tracer_output_dir)
+
+    logging.debug("tracer output directory: %s.", tracer_output_dir)
+
+    # build tracer
     if rotate:
-        tracer = RotateTracer(name, path, output_dir)
+        tracer = RotateTracer(name, path, tracer_output_dir)
         tracer.with_rotate_size(rotate_size=rotate_size)
     else:
-        tracer = MonoTracer(name, path, output_dir)
+        tracer = MonoTracer(name, path, tracer_output_dir)
 
-    logging.debug("rotate tracer." if rotate else "mono tracer.")
+    logging.debug("rotate tracer created." if rotate else "mono tracer created.")
 
     return tracer
 

@@ -105,9 +105,7 @@ class MonoTracer(Tracer):
     def start_tracer(self) -> None:
         """Start tracer in a new process and wait until its over or the stop event is received."""
 
-        self.with_options(
-            ["-o", os.path.join(self._output_dir, f"trace_{self._tid}_0.log")]
-        )
+        self.with_options(["-o", os.path.join(self._output_dir, "trace_0.log")])
 
         # create the bpftrace command
         bt_command = ["bpftrace"] + self._options + [self._script] + self._args
@@ -167,9 +165,7 @@ class RotateTracer(Tracer):
         if self._f:
             self._f.close()
 
-        filename = os.path.join(
-            self._output_dir, f"trace_{self._tid}_{self._file_index}.log"
-        )
+        filename = os.path.join(self._output_dir, f"trace_{self._file_index}.log")
 
         logging.info(f"[{self._tid}] rotating to {filename}.")
 
@@ -190,7 +186,7 @@ class RotateTracer(Tracer):
         if self._current_size + len(data) > self._rotate_size:
             self.__open_new_file()
 
-        self._f.write(line)        
+        self._f.write(line)
         self._current_size += len(data)
 
     def start_tracer(self) -> None:
