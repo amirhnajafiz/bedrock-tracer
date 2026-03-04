@@ -12,9 +12,9 @@ import utils.units
 from containers import cgroup_id_from_container_id, cgroup_id_from_pid
 from containers.docker import container_pid
 from containers.kubernetes import container_uid
-from tracer import import_tracing_scripts
+from tracer import Tracer, import_tracing_scripts
+from tracer.mono import MonoTracer
 from tracer.rotation import RotateTracer
-from tracer.tracer import MonoTracer, Tracer
 
 
 def _new_tracer(

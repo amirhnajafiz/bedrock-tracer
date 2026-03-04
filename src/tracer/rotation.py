@@ -3,7 +3,7 @@ import os
 import select
 import subprocess
 
-from .tracer import Tracer
+from . import Tracer
 
 
 class RotateTracer(Tracer):
@@ -61,6 +61,7 @@ class RotateTracer(Tracer):
 
         # write the line and update the current size
         self._f.write(line)
+        self._f.flush()
         self._current_size += len(data)
 
     def start_tracer(self) -> None:
@@ -107,9 +108,7 @@ class RotateTracer(Tracer):
                     if stream == self._proc.stdout:
                         self.__write_line(line)
                     else:
-                        logging.error(
-                            f"[{self._tid}][ERROR] tracer error: \n{line.strip()}"
-                        )
+                        logging.warning(f"[{self._tid}] tracer stderr:\n{line.strip()}")
 
                 # check if the process has ended
                 if self._proc.poll() is not None:
@@ -117,13 +116,11 @@ class RotateTracer(Tracer):
                     for line in self._proc.stdout:
                         self.__write_line(line)
                     for line in self._proc.stderr:
-                        logging.error(
-                            f"[{self._tid}][ERROR] tracer error: \n{line.strip()}"
-                        )
+                        logging.warning(f"[{self._tid}] tracer stderr:\n{line.strip()}")
                     break
 
         except Exception as e:
-            logging.error(f"[{self._tid}][ERROR] tracer failed: {e}")
+            logging.error(f"[{self._tid}] tracer failed: {e}")
 
         finally:
             # ensure the process is terminated and file is closed

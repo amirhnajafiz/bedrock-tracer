@@ -13,7 +13,7 @@ import dependencies.kernel
 import utils.files
 from builder import build_parser
 from resolver import resolve_mode
-from tracer.tracer import Tracer
+from tracer import Tracer
 from utils.timestamp import export_reference_timestamps
 
 
@@ -193,13 +193,13 @@ def _start(args: argparse.Namespace) -> None:
         signal.SIGTERM,
         _shutdown_wrapper(tracers=tracers, shutdown_event=shutdown_event),
     )
-
     signal.signal(signal.SIGCHLD, _sigchld_handler)
 
     logging.debug(
-        "termination signal handlers are bounded for %s and %s.",
+        "termination signal handlers are bounded for %s, %s and %s.",
         signal.SIGINT,
         signal.SIGTERM,
+        signal.SIGCHLD,
     )
 
     # store the reference timestamps to convert raw clock numbers to datetime

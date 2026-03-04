@@ -66,3 +66,21 @@ sudo $(which bdtrace) --execute ls
 ## Docker Image
 
 See the [`docker-compose.yaml`](docker-compose.yaml) as an example of building the docker image and using it.
+
+## Design
+
+The `cli` program is a process coordinator. It executes `bpftrace` commands as child processes. These commands are categorized as:
+
+* VFS Tracing
+* I/O Tracing
+* mmap Tracing
+
+When starting the `cli` program, each tracer will start a new child process within a thread. Threads are used in the `cli` program to make it a non-blocking program. Each thread pipes `stdout` and `stderr` of it's child process into a file or `cli`'s `stdout`.
+
+The main process, created by `cli` program, monitors the child processes periodically. Three scenarios can happen:
+
+1. The `bpftrace` command fails. With this scenario, the thread raises a failure by setting a failure event. The main process checks these events periodically and if a failure happens, it stops all other processes and starts the cleanup phase.
+2. The `bpftrace` command finishes. With this scenario, the thread raises a stop event. The main process waits until the thread is finished. If all running threads are finished, then it starts the cleanup phase.
+3. A `sigterm` signal is received. With this scenario, the main process raises a stop event to each thread. Each thread will terminate it's child process and raises a stop event (case 2).
+
+During the cleanup phase, all `bpftrace` processes will be terminated to prevent kernel issues.
