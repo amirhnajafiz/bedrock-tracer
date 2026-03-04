@@ -3,7 +3,7 @@ import logging
 from typing import Any, Callable, List
 
 import dispatch as dp
-from tracer import Tracer
+from tracer.tracer import Tracer
 
 # MODE Dispatch maps the cli flags to Python Callables.
 # Callables are a part of dispatch.py module. They have `mode_*` prefix
