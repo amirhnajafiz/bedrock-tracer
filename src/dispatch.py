@@ -80,6 +80,7 @@ def _build_tracers(
     output_dir: str,
     args: Optional[List[str]] = None,
     options: Optional[List[str]] = None,
+    debug: bool = False,
     rotate: bool = False,
     rotate_size: int = 100 * 1024 * 1024,
     disable_vfs: bool = False,
@@ -101,6 +102,8 @@ def _build_tracers(
         Tracer arguments.
     options : Optional[List[str]]
         Tracer flags/options.
+    debug : bool
+        Enable debug mode for tracer runtime.
     rotate : bool
         Enable rotation.
     rotate_size : int
@@ -137,6 +140,9 @@ def _build_tracers(
 
         tracer = _new_tracer(tname, tpath, output_dir, rotate, rotate_size)
 
+        if not debug:
+            tracer.with_options(["--no-warnings"])
+
         if args:
             tracer.with_args(args)
 
@@ -170,6 +176,7 @@ def _common_kwargs(args: argparse.Namespace) -> dict:
 
     return dict(
         output_dir=args.out,
+        debug=args.debug,
         rotate=args.rotate,
         rotate_size=rs,
         disable_vfs=args.disable_vfs,
