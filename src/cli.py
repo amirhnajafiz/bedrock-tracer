@@ -3,7 +3,6 @@ import datetime
 import logging
 import os
 import signal
-import subprocess
 import threading
 import time
 from typing import Callable, List
@@ -14,6 +13,7 @@ import utils.files
 from builder import build_parser
 from resolver import resolve_mode
 from tracer import Tracer
+from utils.process import bpftrace_processes_for_scripts
 from utils.timestamp import export_reference_timestamps
 
 
@@ -40,61 +40,6 @@ def _sigchld_handler(_signum, _frame) -> None:
     _reap_children()
 
 
-def _find_bpftrace_processes_for_scripts(scripts: List[str]) -> List[tuple[int, str]]:
-    """Find running bpftrace processes matching the tracer scripts.
-
-    Parameters
-    ----------
-    scripts : List[str]
-        List of bpftrace script paths to match.
-
-    Returns
-    -------
-    processes : List[tuple[int, str]]
-        List of tuples containing the PID and command of matching bpftrace processes.
-    """
-
-    if not scripts:
-        return []
-
-    # run ps command to get all processes with their command lines
-    result = subprocess.run(
-        ["ps", "-axo", "pid=,command="],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    # if the command failed, return empty list
-    if result.returncode != 0:
-        return []
-
-    # parse the output and filter for bpftrace processes that match the scripts
-    processes = []
-    for raw_line in result.stdout.splitlines():
-        line = raw_line.strip()
-        if not line:
-            continue
-
-        parts = line.split(maxsplit=1)
-        if len(parts) != 2:
-            continue
-
-        try:
-            pid = int(parts[0])
-        except ValueError:
-            continue
-
-        cmd = parts[1]
-        if "bpftrace" not in cmd:
-            continue
-
-        if any(script in cmd for script in scripts):
-            processes.append((pid, cmd))
-
-    return processes
-
-
 def _force_cleanup_bpftrace(tracers: List[Tracer]) -> None:
     """Force cleanup any residual bpftrace process that belongs to current tracers.
 
@@ -106,7 +51,7 @@ def _force_cleanup_bpftrace(tracers: List[Tracer]) -> None:
 
     # get the script paths from the tracers to find the corresponding bpftrace processes
     scripts = [os.path.abspath(tracer.script_path()) for tracer in tracers]
-    leftovers = _find_bpftrace_processes_for_scripts(scripts)
+    leftovers = bpftrace_processes_for_scripts(scripts)
 
     # first try to terminate the processes gracefully with SIGTERM
     for pid, cmd in leftovers:
@@ -120,7 +65,7 @@ def _force_cleanup_bpftrace(tracers: List[Tracer]) -> None:
         time.sleep(0.2)
 
     # if there are still leftovers, force-kill them with SIGKILL
-    leftovers = _find_bpftrace_processes_for_scripts(scripts)
+    leftovers = bpftrace_processes_for_scripts(scripts)
     for pid, cmd in leftovers:
         logging.error("force-killing residual bpftrace (pid=%d): %s", pid, cmd)
         try:
@@ -296,13 +241,12 @@ def main() -> int:
         # start the cli
         _start(args)
 
+        logging.info("exiting.")
+        
+        return 0
     except Exception as e:
         logging.exception(e)
         return 1
-
-    finally:
-        logging.info("exiting.")
-        return 0
 
 
 if __name__ == "__main__":

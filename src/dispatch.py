@@ -6,7 +6,6 @@ from typing import List, Optional
 import dependencies.command
 import dependencies.cri
 import dependencies.path
-import resolver
 import utils.files
 import utils.units
 from containers import cgroup_id_from_container_id, cgroup_id_from_pid
@@ -324,14 +323,13 @@ def mode_docker(args: argparse.Namespace) -> List[Tracer]:
     container_name = args.container
 
     # resolve container pid
-    pid = container_pid(container_name)
+    pid = container_pid(container=container_name)
     logging.debug("container %s has pid %s.", container_name, pid)
 
     # resolve cgroup from pid
     cgroup = cgroup_id_from_pid(pid)
     logging.debug("container %s has cgroup %s.", container_name, cgroup)
 
-    cgroup = resolver.resolve_docker_container(container_name=args.container)
     return _build_cgroup_mode(args, cgroup)
 
 
