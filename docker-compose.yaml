@@ -9,10 +9,6 @@ services:
     volumes:
       - /sys:/sys:rw
       - /lib/modules:/lib/modules:ro
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
     entrypoint: ["/usr/local/app/tests/tracings_test.sh"]
 
   # trace help only builds the image and runs the help command
@@ -32,13 +28,7 @@ services:
       context: .
       dockerfile: build/core/Dockerfile
     privileged: true
-    network_mode: host
     pid: host
-    user: root
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
     volumes:
       - /sys:/sys:rw
       - /lib/modules:/lib/modules:ro
@@ -55,13 +45,7 @@ services:
       context: .
       dockerfile: build/core/Dockerfile
     privileged: true
-    network_mode: host
     pid: host
-    user: root
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
     volumes:
       - /sys:/sys:rw
       - /lib/modules:/lib/modules:ro
