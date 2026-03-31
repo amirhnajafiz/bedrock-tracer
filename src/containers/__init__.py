@@ -1,4 +1,6 @@
 import logging
+import os
+import re
 import subprocess
 
 
@@ -68,23 +70,91 @@ def cgroup_id_from_pid(pid: str) -> str:
 
     try:
         with open(f"/proc/{pid}/cgroup", "r") as f:
-            line = f.readline().strip()
-            cgroup_path = line.split(":")[-1]
+            lines = [line.strip() for line in f if line.strip()]
     except Exception as e:
         raise RuntimeError(f"could not read cgroup file: {e}")
 
-    full_path = f"/sys/fs/cgroup{cgroup_path}"
+    if not lines:
+        raise RuntimeError(f"could not read cgroup file: no entries for pid {pid}")
 
-    logging.debug("cgroup path for %s is found %s.", pid, full_path)
+    candidates = []
+    rel_paths = []
 
-    try:
-        stat_proc = subprocess.run(
-            ["stat", "-c", "%i", full_path],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
+    for line in lines:
+        parts = line.split(":", 2)
+        if len(parts) != 3:
+            continue
 
-        return stat_proc.stdout.strip()
-    except Exception as e:
-        raise RuntimeError(f"could not stat cgroup path {full_path}: {e}")
+        _, controllers, cgroup_path = parts
+
+        # keep path inside cgroup mount even if /proc/<pid>/cgroup has a leading ../
+        rel_path = re.sub(r"^(\.\./)+", "", cgroup_path.lstrip("/"))
+
+        if rel_path:
+            rel_paths.append(rel_path)
+            candidates.append(os.path.join("/sys/fs/cgroup", rel_path))
+        else:
+            candidates.append("/sys/fs/cgroup")
+
+        if controllers:
+            for controller in controllers.split(","):
+                controller = controller.strip()
+                if not controller:
+                    continue
+                controller_dir = controller.removeprefix("name=")
+                if rel_path:
+                    candidates.append(
+                        os.path.join("/sys/fs/cgroup", controller_dir, rel_path)
+                    )
+                else:
+                    candidates.append(os.path.join("/sys/fs/cgroup", controller_dir))
+
+    # preserve order, remove duplicates
+    candidates = list(dict.fromkeys(candidates))
+
+    last_error = None
+    for full_path in candidates:
+        logging.debug("trying cgroup path for %s: %s", pid, full_path)
+        try:
+            stat_proc = subprocess.run(
+                ["stat", "-c", "%i", full_path],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return stat_proc.stdout.strip()
+        except Exception as e:
+            last_error = e
+
+    # fallback: search by the leaf cgroup directory when path prefixes differ
+    for rel_path in dict.fromkeys(rel_paths):
+        leaf = os.path.basename(rel_path)
+        if not leaf:
+            continue
+        try:
+            find_proc = subprocess.run(
+                ["find", "/sys/fs/cgroup", "-type", "d", "-name", leaf],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            match = find_proc.stdout.strip().splitlines()
+            if not match:
+                continue
+
+            full_path = match[0]
+            logging.debug("fallback cgroup path for %s resolved to %s", pid, full_path)
+
+            stat_proc = subprocess.run(
+                ["stat", "-c", "%i", full_path],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            return stat_proc.stdout.strip()
+        except Exception as e:
+            last_error = e
+
+    raise RuntimeError(
+        f"could not stat any cgroup path for pid {pid}; tried {candidates}: {last_error}"
+    )
