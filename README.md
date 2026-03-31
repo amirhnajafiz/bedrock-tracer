@@ -164,6 +164,14 @@ Fix:
 - bind mount a writable host directory (for example `$(pwd)/logs:/logs`)
 - pass `-o /logs/<trace_name>` in `bdtrace`
 
+### `Not running in Docker environment`
+
+Cause: tracer process can't access the host's docker container socket.
+
+Fix:
+
+- try `-v /var/run/docker.sock:/var/run/docker.sock` is you want to trace a container when running bedrock inside a container
+
 ## Root Access
 
 All tracing modes require root privileges.
